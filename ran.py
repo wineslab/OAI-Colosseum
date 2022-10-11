@@ -4,6 +4,7 @@ import json
 import nrarfcn as nr
 import ipaddress
 from dotenv import load_dotenv
+from set_route_to_cn import main as set_route
 
 load_dotenv()
 
@@ -55,6 +56,7 @@ class Ran:
             self.run_ue()
 
     def run_gnb(self, type):
+        set_route(MAIN_DEV)
         LABW = get_locationandbandwidth(self.prb)
         pre_path = ""
         if self.args.numa > 0:
@@ -67,9 +69,9 @@ class Ran:
         if self.prb >= 106 and self.numerology == 1:
             oai_args.append("-E")
         # Set cell name and id
-        oai_args += [f'--Active_gNBs.[0] "IAB-{self.node_id}"',
-                     f'--gNBs.[0].gNB_ID = {self.node_id}',
-                     f'--gNBs.[0].gNB_name = "IAB-{self.node_id}"']
+        oai_args += [f'--Active_gNBs "IAB-{self.node_id}"',
+                     f'--gNBs.[0].gNB_ID {self.node_id}',
+                     f'--gNBs.[0].gNB_name "IAB-{self.node_id}"']
         # Set frequency, prb and BWP Location
         oai_args += [f'--gNBs.[0].servingCellConfigCommon.[0].absoluteFrequencySSB {self.arfcn}',
                      f'--gNBs.[0].servingCellConfigCommon.[0].dl_absoluteFrequencyPointA {self.pointa}',
@@ -86,13 +88,12 @@ class Ran:
                      f'--gNBs.[0].NETWORK_INTERFACES.GNB_IPV4_ADDRESS_FOR_FOR_NGU {self.main_ip}']
 
         # Set USRP addr
-        oai_args += [f'--RUs.[0].srs_addrs = "addr={USRP_ADDR}"']
+        oai_args += [f'--RUs.[0].sdr_addrs "addr={USRP_ADDR}"']
         # Add option to increase the UE stability
         oai_args += [f'--continuous-tx']
         os.system(f"{pre_path} {executable} {' '.join(oai_args)}")
 
     def run_ue(self):
-        imsi_string = self.node_id[1:]
         pre_path = ""
         if self.args.numa > 0:
             pre_path = f"numactl --cpunodebind=netdev:{USRP_DEV} --membind=netdev:{USRP_DEV}"
