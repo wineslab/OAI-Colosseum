@@ -78,6 +78,7 @@ class Ran:
                      f'--gNBs.[0].servingCellConfigCommon.[0].initialDLBWPlocationAndBandwidth {LABW}',
                      f'--gNBs.[0].servingCellConfigCommon.[0].initialULBWPlocationAndBandwidth {LABW}']
         # Set AMF parameters
+        # BUG: this cli command is not working, wait for answer from OAI ml
         oai_args += [f'--gNBs.[0].amf_ip_address.[0].ipv4 {AMF_IP}',
                      f'--gNBs.[0].NETWORK_INTERFACES.GNB_INTERFACE_NAME_FOR_NG_AMF {MAIN_DEV}',
                      f'--gNBs.[0].NETWORK_INTERFACES.GNB_INTERFACE_NAME_FOR_NGU {MAIN_DEV}',
@@ -86,10 +87,12 @@ class Ran:
 
         # Set USRP addr
         oai_args += [f'--RUs.[0].srs_addrs = "addr={USRP_ADDR}"']
-        #os.system(f"echo {pre_path} {executable} {' '.join(oai_args)}")
+        # Add option to increase the UE stability
+        oai_args += [f'--continuous-tx']
+        os.system(f"{pre_path} {executable} {' '.join(oai_args)}")
 
     def run_ue(self):
-        imsi_string = "01"  # TODO: compute from ip
+        imsi_string = self.node_id[1:]
         pre_path = ""
         if self.args.numa > 0:
             pre_path = f"numactl --cpunodebind=netdev:{USRP_DEV} --membind=netdev:{USRP_DEV}"
@@ -110,12 +113,13 @@ class Ran:
                 '--ue-txgain 0',
                 f'-A {self.conf["timing_advance"]}',
                 '--clock-source 1',
-                '--time-source 1']
+                '--time-source 1',
+                '--ue-fo-compensation']
         if self.prb >= 106 and self.numerology == 1:
             # USRP X3*0 needs to lower the sample rate to 3/4
             args.append("-E")
         print(self.arfcn, self.pointa, self.ssb_frequency)
-        #os.system(f"echo {pre_path} {executable} {' '.join(args)}")
+        os.system(f"{pre_path} {executable} {' '.join(args)}")
 
 
 if __name__ == '__main__':
