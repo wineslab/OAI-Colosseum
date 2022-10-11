@@ -1,6 +1,7 @@
 version: "3.8"
 services:
   mysql:
+    restart: always
     container_name: "mysql"
     image: mysql:5.7
     volumes:
@@ -21,6 +22,7 @@ services:
       public_net:
         ipv4_address: 192.168.70.131
   oai-nrf:
+    restart: always
     container_name: "oai-nrf"
     image: oai-nrf:v1.4.0
     environment:
@@ -34,6 +36,7 @@ services:
       public_net:
         ipv4_address: 192.168.70.130
   oai-amf:
+    restart: always
     container_name: "oai-amf"
     image: oai-amf:v1.4.0
     environment:
@@ -100,6 +103,7 @@ services:
       public_net:
         ipv4_address: 192.168.70.132
   oai-smf:
+    restart: always
     container_name: "oai-smf"
     image: oai-smf:v1.4.0
     environment:
@@ -150,6 +154,7 @@ services:
       public_net:
         ipv4_address: 192.168.70.133
   oai-spgwu:
+    restart: always
     container_name: "oai-spgwu"
     image: oai-spgwu-tiny:v1.4.0
     #image: oai-spgwu-debug:debug # eugenio's version for IAB
