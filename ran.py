@@ -103,10 +103,10 @@ class Ran:
         executable = f"{OAI_PATH}/nr-uesoftmodem"
         args = ["--dlsch-parallel 8",
                 "--sa",
-                f"--uicc0.imsi 20899000074{self.node_id[1:]}"
+                f"--uicc0.imsi 20899000074{self.node_id[1:]}",
                 f'--usrp-args "addr = {USRP_ADDR}"',
-                '--numerology {self.numerology}',
-                '-r {self.prb}',
+                f'--numerology {self.numerology}',
+                f'-r {self.prb}',
                 f'-s {self.conf["ssb_start"]}',
                 '--band 78',
                 f'-C {self.ssb_frequency}',
