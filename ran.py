@@ -28,6 +28,13 @@ def get_locationandbandwidth(prb):
         return 275*(prb-1)
 
 
+def subst_bindip(local_ip):
+    os.system(f"""sed -i "/GNB_INTERFACE_NAME_FOR_NG_AMF/ c \    GNB_INTERFACE_NAME_FOR_NG_AMF              = \\"{MAIN_DEV}\\";" {BASE_CONF};""")
+    os.system(f"""sed -i "/GNB_INTERFACE_NAME_FOR_NGU/ c \    GNB_INTERFACE_NAME_FOR_NGU              = \\"{MAIN_DEV}\\";" {BASE_CONF};""")
+    os.system(f"""sed -i "/GNB_IPV4_ADDRESS_FOR_NG_AMF/ c \    GNB_IPV4_ADDRESS_FOR_NG_AMF              = \\"{local_ip}/24\\";" {BASE_CONF};""")
+    os.system(f"""sed -i "/GNB_IPV4_ADDRESS_FOR_NGU/ c \    GNB_IPV4_ADDRESS_FOR_NGU                 = \\"{local_ip}/24\\";" {BASE_CONF};""")
+
+
 class Ran:
     def __init__(self, args):
         self.args = args
@@ -56,6 +63,7 @@ class Ran:
             self.run_ue()
 
     def run_gnb(self, type):
+        subst_bindip(self.main_ip)
         set_route(MAIN_DEV)
         LABW = get_locationandbandwidth(self.prb)
         pre_path = ""
@@ -104,10 +112,10 @@ class Ran:
         args = ["--dlsch-parallel 8",
                 "--sa",
                 f"--uicc0.imsi 20899000074{self.node_id[1:]}",
-                f'--usrp-args "addr = {USRP_ADDR}"',
+                f'--usrp-args "addr={USRP_ADDR}"',
                 f'--numerology {self.numerology}',
                 f'-r {self.prb}',
-                f'-s {self.conf["ssb_start"]}',
+                f'--ssb {self.conf["ssb_start"]}',
                 '--band 78',
                 f'-C {self.ssb_frequency}',
                 '--nokrnmod 1',
