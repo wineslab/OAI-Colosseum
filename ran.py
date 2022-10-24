@@ -40,7 +40,7 @@ def subst_bindip(local_ip, dev):
 
 
 def flash_x310():
-    os.system(f"""source {VIVADO_PATH}/setupenv.sh && {VIVADO_PATH}/tools/scripts/launch_vivado.sh -mode batch -source {VIVADO_PATH}/tools/scripts/viv_hardware_utils.tcl -nolog -nojournal -tclargs program /usr/local/share/uhd/images/usrp_x310_fpga_HGS.bit | grep -v -E '(^$|^#|\*\*)'""")
+    os.system(f"./utils/flash_usrp.sh")
 
 
 def reset_x310():
