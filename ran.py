@@ -118,11 +118,11 @@ class Ran:
         # Set AMF parameters
         # BUG: this cli command is not working, wait for answer from OAI
         # TODO: fix when type = relay
-        # oai_args += [f'--gNBs.[0].amf_ip_address.[0].ipv4 {AMF_IP}',
-        #              f'--gNBs.[0].NETWORK_INTERFACES.GNB_INTERFACE_NAME_FOR_NG_AMF {MAIN_DEV}',
-        #              f'--gNBs.[0].NETWORK_INTERFACES.GNB_INTERFACE_NAME_FOR_NGU {MAIN_DEV}',
-        #              f'--gNBs.[0].NETWORK_INTERFACES.GNB_IPV4_ADDRESS_FOR_NG_AMF {self.main_ip}',
-        #              f'--gNBs.[0].NETWORK_INTERFACES.GNB_IPV4_ADDRESS_FOR_FOR_NGU {self.main_ip}']
+        oai_args += [f'--gNBs.[0].amf_ip_address.[0].ipv4 {AMF_IP}',
+                     f'--gNBs.[0].NETWORK_INTERFACES.GNB_INTERFACE_NAME_FOR_NG_AMF {MAIN_DEV}',
+                     f'--gNBs.[0].NETWORK_INTERFACES.GNB_INTERFACE_NAME_FOR_NGU {MAIN_DEV}',
+                     f'--gNBs.[0].NETWORK_INTERFACES.GNB_IPV4_ADDRESS_FOR_NG_AMF {self.main_ip}',
+                     f'--gNBs.[0].NETWORK_INTERFACES.GNB_IPV4_ADDRESS_FOR_FOR_NGU {self.main_ip}']
 
         # Set USRP addr
         oai_args += [f'--RUs.[0].sdr_addrs "addr={USRP_ADDR}"']
