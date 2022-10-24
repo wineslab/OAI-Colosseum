@@ -2,19 +2,21 @@ import os
 import argparse
 import json
 import nrarfcn as nr
-import ipaddress
+import sys
 import time
-from dotenv import load_dotenv
+from dotenv import load_dotenv, find_dotenv
 from utils.set_route_to_cn import main as set_route
 from utils.x300 import ctrl_socket
-load_dotenv()
+load_dotenv(f'{sys.path[0]}/.env.colosseum')
 
 USRP_DEV = os.getenv('USRP_DEV')
 OAI_PATH = os.getenv('OAI_PATH')
 BASE_CONF = os.getenv('BASE_CONF')
 USRP_ADDR = os.getenv('USRP_ADDR')
 MAIN_DEV = os.getenv('MAIN_DEV')
+IAB_DEV = os.getenv('IAB_DEV')
 AMF_IP = os.getenv('AMF_IP')
+VIVADO_PATH = '/opt/vivado_colosseum'
 
 
 def pointa_from_ssb(arfcn, prb):
@@ -29,16 +31,16 @@ def get_locationandbandwidth(prb):
         return 275*(prb-1)
 
 
-def subst_bindip(local_ip):
+def subst_bindip(local_ip, dev):
     # Workaround while the bug with CLI params is fixed
-    os.system(f"""sed -i "/GNB_INTERFACE_NAME_FOR_NG_AMF/ c \    GNB_INTERFACE_NAME_FOR_NG_AMF              = \\"{MAIN_DEV}\\";" {BASE_CONF};""")
-    os.system(f"""sed -i "/GNB_INTERFACE_NAME_FOR_NGU/ c \    GNB_INTERFACE_NAME_FOR_NGU              = \\"{MAIN_DEV}\\";" {BASE_CONF};""")
+    os.system(f"""sed -i "/GNB_INTERFACE_NAME_FOR_NG_AMF/ c \    GNB_INTERFACE_NAME_FOR_NG_AMF              = \\"{dev}\\";" {BASE_CONF};""")
+    os.system(f"""sed -i "/GNB_INTERFACE_NAME_FOR_NGU/ c \    GNB_INTERFACE_NAME_FOR_NGU              = \\"{dev}\\";" {BASE_CONF};""")
     os.system(f"""sed -i "/GNB_IPV4_ADDRESS_FOR_NG_AMF/ c \    GNB_IPV4_ADDRESS_FOR_NG_AMF              = \\"{local_ip}/24\\";" {BASE_CONF};""")
     os.system(f"""sed -i "/GNB_IPV4_ADDRESS_FOR_NGU/ c \    GNB_IPV4_ADDRESS_FOR_NGU                 = \\"{local_ip}/24\\";" {BASE_CONF};""")
 
 
 def flash_x310():
-    os.system(f"""/opt/vivado_colosseum/tools/scripts/launch_vivado.sh -mode batch -source /opt/vivado_colosseum/tools/scripts/viv_hardware_utils.tcl -nolog -nojournal -tclargs program /usr/local/share/uhd/images/usrp_x310_fpga_HGS.bit | grep -v -E '(^$|^#|\*\*)'""")
+    os.system(f"""source {VIVADO_PATH}/setupenv.sh && {VIVADO_PATH}/tools/scripts/launch_vivado.sh -mode batch -source {VIVADO_PATH}/tools/scripts/viv_hardware_utils.tcl -nolog -nojournal -tclargs program /usr/local/share/uhd/images/usrp_x310_fpga_HGS.bit | grep -v -E '(^$|^#|\*\*)'""")
 
 
 def reset_x310():
@@ -53,19 +55,18 @@ class Ran:
         self.numerology = args.numerology
         self.channel = args.channel
         self.type = args.type
-        with open('conf.json', 'r') as fr:
+        with open(os.path.join(sys.path[0], 'conf.json'), 'r') as fr:
             conf = json.load(fr)
         self.conf = conf[str(self.numerology)][str(self.prb)]
         self.arfcn = self.conf['arfcns'][self.channel]
         self.pointa = pointa_from_ssb(self.arfcn, self.prb)
         self.ssb_frequency = int(nr.get_frequency(self.arfcn)*1e6)
-        self.set_main_ip()
+        self.set_ips()
 
-    def set_main_ip(self):
-        main_ip = os.popen(f"ip -f inet addr show {MAIN_DEV} | grep -Po 'inet \K[\d.]+'").read().strip()
-        ipaddress.ip_address(main_ip)
-        self.main_ip = main_ip
-        self.node_id = main_ip.split('.')[3]
+    def set_ips(self):
+        self.main_ip = os.popen(f"ip -f inet addr show {MAIN_DEV} | grep -Po 'inet \K[\d.]+'").read().strip()
+        self.iab_ip = os.popen(f"ip -f inet addr show {IAB_DEV} | grep -Po 'inet \K[\d.]+'").read().strip()
+        self.node_id = self.main_ip.split('.')[3]
 
     def run(self):
         if self.args.flash == 1:
@@ -77,12 +78,21 @@ class Ran:
 
         if self.type == 'donor':
             self.run_gnb(type='donor')
+        elif self.type == 'relay':
+            self.run_gnb(type='relay')
         elif self.type == 'ue':
             self.run_ue()
+        else:
+            print("Error")
+            exit(0)
 
     def run_gnb(self, type):
-        subst_bindip(self.main_ip)
-        set_route(MAIN_DEV)
+        if type == 'donor':
+            subst_bindip(self.main_ip, MAIN_DEV)
+            set_route(MAIN_DEV)
+        elif type == 'relay':
+            subst_bindip(self.iab_ip, IAB_DEV)
+
         LABW = get_locationandbandwidth(self.prb)
         pre_path = ""
         if self.args.numa > 0:
@@ -106,18 +116,19 @@ class Ran:
                      f'--gNBs.[0].servingCellConfigCommon.[0].initialDLBWPlocationAndBandwidth {LABW}',
                      f'--gNBs.[0].servingCellConfigCommon.[0].initialULBWPlocationAndBandwidth {LABW}']
         # Set AMF parameters
-        # BUG: this cli command is not working, wait for answer from OAI ml
-        oai_args += [f'--gNBs.[0].amf_ip_address.[0].ipv4 {AMF_IP}',
-                     f'--gNBs.[0].NETWORK_INTERFACES.GNB_INTERFACE_NAME_FOR_NG_AMF {MAIN_DEV}',
-                     f'--gNBs.[0].NETWORK_INTERFACES.GNB_INTERFACE_NAME_FOR_NGU {MAIN_DEV}',
-                     f'--gNBs.[0].NETWORK_INTERFACES.GNB_IPV4_ADDRESS_FOR_NG_AMF {self.main_ip}',
-                     f'--gNBs.[0].NETWORK_INTERFACES.GNB_IPV4_ADDRESS_FOR_FOR_NGU {self.main_ip}']
+        # BUG: this cli command is not working, wait for answer from OAI
+        # TODO: fix when type = relay
+        # oai_args += [f'--gNBs.[0].amf_ip_address.[0].ipv4 {AMF_IP}',
+        #              f'--gNBs.[0].NETWORK_INTERFACES.GNB_INTERFACE_NAME_FOR_NG_AMF {MAIN_DEV}',
+        #              f'--gNBs.[0].NETWORK_INTERFACES.GNB_INTERFACE_NAME_FOR_NGU {MAIN_DEV}',
+        #              f'--gNBs.[0].NETWORK_INTERFACES.GNB_IPV4_ADDRESS_FOR_NG_AMF {self.main_ip}',
+        #              f'--gNBs.[0].NETWORK_INTERFACES.GNB_IPV4_ADDRESS_FOR_FOR_NGU {self.main_ip}']
 
         # Set USRP addr
         oai_args += [f'--RUs.[0].sdr_addrs "addr={USRP_ADDR}"']
         # Add option to increase the UE stability
         oai_args += [f'--continuous-tx']
-        os.system(f"{pre_path} {executable} {' '.join(oai_args)}")
+        os.system(f"""{pre_path} {executable} {' '.join(oai_args)}  2>&1 | tee ~/mylogs/UE1-(date +"%m%d%H%M").log | tee ~/last_log""")
 
     def run_ue(self):
         pre_path = ""
@@ -146,8 +157,7 @@ class Ran:
         if self.prb >= 106 and self.numerology == 1:
             # USRP X3*0 needs to lower the sample rate to 3/4
             args.append("-E")
-        print(self.arfcn, self.pointa, self.ssb_frequency)
-        os.system(f"{pre_path} {executable} {' '.join(args)}")
+        os.system(f"""{pre_path} {executable} {' '.join(args)} 2>&1 | tee ~/mylogs/UE1-(date +"%m%d%H%M").log | tee ~/last_log""")
 
 
 if __name__ == '__main__':
