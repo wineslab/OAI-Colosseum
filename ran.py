@@ -3,9 +3,10 @@ import argparse
 import json
 import nrarfcn as nr
 import ipaddress
+import time
 from dotenv import load_dotenv
-from set_route_to_cn import main as set_route
-
+from utils.set_route_to_cn import main as set_route
+from utils.x300 import ctrl_socket
 load_dotenv()
 
 USRP_DEV = os.getenv('USRP_DEV')
@@ -29,10 +30,20 @@ def get_locationandbandwidth(prb):
 
 
 def subst_bindip(local_ip):
+    # Workaround while the bug with CLI params is fixed
     os.system(f"""sed -i "/GNB_INTERFACE_NAME_FOR_NG_AMF/ c \    GNB_INTERFACE_NAME_FOR_NG_AMF              = \\"{MAIN_DEV}\\";" {BASE_CONF};""")
     os.system(f"""sed -i "/GNB_INTERFACE_NAME_FOR_NGU/ c \    GNB_INTERFACE_NAME_FOR_NGU              = \\"{MAIN_DEV}\\";" {BASE_CONF};""")
     os.system(f"""sed -i "/GNB_IPV4_ADDRESS_FOR_NG_AMF/ c \    GNB_IPV4_ADDRESS_FOR_NG_AMF              = \\"{local_ip}/24\\";" {BASE_CONF};""")
     os.system(f"""sed -i "/GNB_IPV4_ADDRESS_FOR_NGU/ c \    GNB_IPV4_ADDRESS_FOR_NGU                 = \\"{local_ip}/24\\";" {BASE_CONF};""")
+
+
+def flash_x310():
+    os.system(f"""/opt/vivado_colosseum/tools/scripts/launch_vivado.sh -mode batch -source /opt/vivado_colosseum/tools/scripts/viv_hardware_utils.tcl -nolog -nojournal -tclargs program /usr/local/share/uhd/images/usrp_x310_fpga_HGS.bit | grep -v -E '(^$|^#|\*\*)'""")
+
+
+def reset_x310():
+    x300 = ctrl_socket(addr=USRP_ADDR)
+    x300.poke_print(0x100058, 1)
 
 
 class Ran:
@@ -57,6 +68,13 @@ class Ran:
         self.node_id = main_ip.split('.')[3]
 
     def run(self):
+        if self.args.flash == 1:
+            flash_x310()
+            time.sleep(5)
+        if self.args.reset == 1:
+            reset_x310()
+            time.sleep(5)
+
         if self.type == 'donor':
             self.run_gnb(type='donor')
         elif self.type == 'ue':
@@ -115,7 +133,8 @@ class Ran:
                 f'--usrp-args "addr={USRP_ADDR}"',
                 f'--numerology {self.numerology}',
                 f'-r {self.prb}',
-                f'--ssb {self.conf["ssb_start"]}',
+                # This parameter changes from -s to -ssb after a certain commit ~w42
+                f'-s {self.conf["ssb_start"]}',
                 '--band 78',
                 f'-C {self.ssb_frequency}',
                 '--nokrnmod 1',
@@ -149,10 +168,11 @@ if __name__ == '__main__':
                         required=True,
                         choices=['donor', 'relay', 'ue'])
     parser.add_argument('--numa',
-                        required=False,
-                        default=1,
-                        type=int)
-    parser.add_argument('--gdb', required=False, default=0, type=int)
+                        default=True,
+                        action='store_true')
+    parser.add_argument('--gdb', default=False, action='store_true')
+    parser.add_argument('--reset', '-r', default=False, action='store_true')
+    parser.add_argument('--flash', '-f', default=False, action='store_true')
 
     args = parser.parse_args()
     r = Ran(args)
