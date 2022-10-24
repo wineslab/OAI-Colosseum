@@ -7,7 +7,7 @@ import time
 from dotenv import load_dotenv, find_dotenv
 from utils.set_route_to_cn import main as set_route
 from utils.x300 import ctrl_socket
-load_dotenv(f'{sys.path[0]}/.env.colosseum')
+load_dotenv()
 
 USRP_DEV = os.getenv('USRP_DEV')
 OAI_PATH = os.getenv('OAI_PATH')
@@ -55,7 +55,7 @@ class Ran:
         self.numerology = args.numerology
         self.channel = args.channel
         self.type = args.type
-        with open(os.path.join(sys.path[0], 'conf.json'), 'r') as fr:
+        with open('conf.json', 'r') as fr:
             conf = json.load(fr)
         self.conf = conf[str(self.numerology)][str(self.prb)]
         self.arfcn = self.conf['arfcns'][self.channel]
@@ -128,7 +128,7 @@ class Ran:
         oai_args += [f'--RUs.[0].sdr_addrs "addr={USRP_ADDR}"']
         # Add option to increase the UE stability
         oai_args += [f'--continuous-tx']
-        os.system(f"""{pre_path} {executable} {' '.join(oai_args)}  2>&1 | tee ~/mylogs/UE1-(date +"%m%d%H%M").log | tee ~/last_log""")
+        os.system(f"""{pre_path} {executable} {' '.join(oai_args)}  2>&1 | tee ~/mylogs/gNB-$(date +"%m%d%H%M").log | tee ~/last_log""")
 
     def run_ue(self):
         pre_path = ""
@@ -157,7 +157,7 @@ class Ran:
         if self.prb >= 106 and self.numerology == 1:
             # USRP X3*0 needs to lower the sample rate to 3/4
             args.append("-E")
-        os.system(f"""{pre_path} {executable} {' '.join(args)} 2>&1 | tee ~/mylogs/UE1-(date +"%m%d%H%M").log | tee ~/last_log""")
+        os.system(f"""{pre_path} {executable} {' '.join(args)} 2>&1 | tee ~/mylogs/UE1-$(date +"%m%d%H%M").log | tee ~/last_log""")
 
 
 if __name__ == '__main__':
