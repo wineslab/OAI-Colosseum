@@ -72,10 +72,6 @@ class Ran:
         if self.args.flash == 1:
             flash_x310()
             time.sleep(5)
-        if self.args.reset == 1:
-            reset_x310()
-            time.sleep(5)
-
         if self.type == 'donor':
             self.run_gnb(type='donor')
         elif self.type == 'relay':
@@ -168,7 +164,7 @@ if __name__ == '__main__':
                         choices=[0, 1, 2, 3, 4],
                         help='numerology for subcarrier spacing')
     parser.add_argument('-p', '--prb',
-                        default=106
+                        default=106,
                         type=int)
     parser.add_argument('-c', '--channel',
                         default=0,
