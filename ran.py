@@ -4,7 +4,7 @@ import json
 import nrarfcn as nr
 import sys
 import time
-from dotenv import load_dotenv, find_dotenv
+from dotenv import load_dotenv
 from utils.set_route_to_cn import main as set_route
 from utils.x300 import ctrl_socket
 load_dotenv()
@@ -138,7 +138,7 @@ class Ran:
             # gdb override numa
             pre_path = f'gdb --args'
         executable = f"{OAI_PATH}/nr-uesoftmodem"
-        args = ["--dlsch-parallel 8",
+        args = ["--dlsch-parallel 32",
                 "--sa",
                 f"--uicc0.imsi 20899000074{self.node_id[1:]}",
                 f'--usrp-args "addr={USRP_ADDR}"',
@@ -168,10 +168,9 @@ if __name__ == '__main__':
                         choices=[0, 1, 2, 3, 4],
                         help='numerology for subcarrier spacing')
     parser.add_argument('-p', '--prb',
-                        required=True,
+                        default=106
                         type=int)
     parser.add_argument('-c', '--channel',
-                        required=True,
                         default=0,
                         type=int)
     parser.add_argument('-t', '--type',
@@ -181,7 +180,6 @@ if __name__ == '__main__':
                         default=True,
                         action='store_true')
     parser.add_argument('--gdb', default=False, action='store_true')
-    parser.add_argument('--reset', '-r', default=False, action='store_true')
     parser.add_argument('--flash', '-f', default=False, action='store_true')
 
     args = parser.parse_args()
