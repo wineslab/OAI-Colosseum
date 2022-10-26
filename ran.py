@@ -69,6 +69,10 @@ class Ran:
         self.node_id = self.main_ip.split('.')[3]
 
     def run(self):
+        try:
+            os.remove('/root/last_log')
+        except:
+            pass
         if self.args.flash == 1:
             flash_x310()
             time.sleep(5)
