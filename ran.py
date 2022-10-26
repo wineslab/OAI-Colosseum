@@ -1,6 +1,7 @@
 import os
 import argparse
 import json
+from threading import local
 import nrarfcn as nr
 import sys
 import time
@@ -88,10 +89,16 @@ class Ran:
 
     def run_gnb(self, type):
         if type == 'donor':
-            subst_bindip(self.main_ip, MAIN_DEV)
+            local_ip = self.main_ip
+            local_dev = MAIN_DEV
             set_route(MAIN_DEV)
         elif type == 'relay':
-            subst_bindip(self.iab_ip, IAB_DEV)
+            local_ip = self.iab_ip
+            local_dev = IAB_DEV
+        else:
+            print("IAB type error")
+            exit(0)
+        subst_bindip(local_ip, local_dev)
 
         LABW = get_locationandbandwidth(self.prb)
         pre_path = ""
@@ -117,12 +124,11 @@ class Ran:
                      f'--gNBs.[0].servingCellConfigCommon.[0].initialULBWPlocationAndBandwidth {LABW}']
         # Set AMF parameters
         # BUG: this cli command is not working, wait for answer from OAI
-        # TODO: fix when type = relay
         oai_args += [f'--gNBs.[0].amf_ip_address.[0].ipv4 {AMF_IP}',
-                     f'--gNBs.[0].NETWORK_INTERFACES.GNB_INTERFACE_NAME_FOR_NG_AMF {MAIN_DEV}',
-                     f'--gNBs.[0].NETWORK_INTERFACES.GNB_INTERFACE_NAME_FOR_NGU {MAIN_DEV}',
-                     f'--gNBs.[0].NETWORK_INTERFACES.GNB_IPV4_ADDRESS_FOR_NG_AMF {self.main_ip}',
-                     f'--gNBs.[0].NETWORK_INTERFACES.GNB_IPV4_ADDRESS_FOR_FOR_NGU {self.main_ip}']
+                     f'--gNBs.[0].NETWORK_INTERFACES.GNB_INTERFACE_NAME_FOR_NG_AMF {local_dev}',
+                     f'--gNBs.[0].NETWORK_INTERFACES.GNB_INTERFACE_NAME_FOR_NGU {local_dev}',
+                     f'--gNBs.[0].NETWORK_INTERFACES.GNB_IPV4_ADDRESS_FOR_NG_AMF {local_ip}',
+                     f'--gNBs.[0].NETWORK_INTERFACES.GNB_IPV4_ADDRESS_FOR_FOR_NGU {local_ip}']
 
         # Set USRP addr
         oai_args += [f'--RUs.[0].sdr_addrs "addr={USRP_ADDR}"']
