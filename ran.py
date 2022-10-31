@@ -8,6 +8,8 @@ import time
 from dotenv import load_dotenv
 from utils.set_route_to_cn import main as set_route
 from utils.x300 import ctrl_socket
+import subprocess
+import signal
 load_dotenv()
 
 USRP_DEV = os.getenv('USRP_DEV')
@@ -57,12 +59,15 @@ class Ran:
         self.channel = args.channel
         self.type = args.type
         with open('conf.json', 'r') as fr:
-            conf = json.load(fr)
-        self.conf = conf[str(self.numerology)][str(self.prb)]
-        self.arfcn = self.conf['arfcns'][self.channel]
+            self.conf_json = json.load(fr)
+        self.conf = self.conf_json[str(self.numerology)][str(self.prb)]
+        self.set_params(arfcn=self.conf['arfcns'][self.channel])
+        self.set_ips()
+
+    def set_params(self, arfcn):
+        self.arfcn = arfcn
         self.pointa = pointa_from_ssb(self.arfcn, self.prb)
         self.ssb_frequency = int(nr.get_frequency(self.arfcn)*1e6)
-        self.set_ips()
 
     def set_ips(self):
         self.main_ip = os.popen(f"ip -f inet addr show {MAIN_DEV} | grep -Po 'inet \K[\d.]+'").read().strip()
@@ -70,6 +75,7 @@ class Ran:
         self.node_id = self.main_ip.split('.')[3]
 
     def run(self):
+        self.run_o1server()
         try:
             os.remove('/root/last_log')
         except:
@@ -82,7 +88,9 @@ class Ran:
         elif self.type == 'relay':
             self.run_gnb(type='relay')
         elif self.type == 'ue':
-            self.run_ue()
+            self.run_ue(fork=False)
+        elif self.type == 'scan':
+            self.run_scan()
         else:
             print("Error")
             exit(0)
@@ -131,12 +139,12 @@ class Ran:
                      f'--gNBs.[0].NETWORK_INTERFACES.GNB_IPV4_ADDRESS_FOR_FOR_NGU {local_ip}']
 
         # Set USRP addr
-        oai_args += [f'--RUs.[0].sdr_addrs "addr={USRP_ADDR}"']
+        #oai_args += [f'--RUs.[0].sdr_addrs "addr={USRP_ADDR}"']
         # Add option to increase the UE stability
         oai_args += [f'--continuous-tx']
         os.system(f"""{pre_path} {executable} {' '.join(oai_args)}  2>&1 | tee ~/mylogs/gNB-$(date +"%m%d%H%M").log | tee ~/last_log""")
 
-    def run_ue(self):
+    def run_ue(self, fork=False):
         pre_path = ""
         if self.args.numa > 0:
             pre_path = f"numactl --cpunodebind=netdev:{USRP_DEV} --membind=netdev:{USRP_DEV}"
@@ -147,7 +155,7 @@ class Ran:
         args = ["--dlsch-parallel 32",
                 "--sa",
                 f"--uicc0.imsi 20899000074{self.node_id[1:]}",
-                f'--usrp-args "addr={USRP_ADDR}"',
+                #f'--usrp-args "addr={USRP_ADDR}"',
                 f'--numerology {self.numerology}',
                 f'-r {self.prb}',
                 # This parameter changes from -s to -ssb after a certain commit ~w42
@@ -163,7 +171,36 @@ class Ran:
         if self.prb >= 106 and self.numerology == 1:
             # USRP X3*0 needs to lower the sample rate to 3/4
             args.append("-E")
-        os.system(f"""{pre_path} {executable} {' '.join(args)} 2>&1 | tee ~/mylogs/UE1-$(date +"%m%d%H%M").log | tee ~/last_log""")
+        if fork:
+            # Fork to a new subprocess w/o std[err|out] redirection and change the Session Id so that we can kill the subproceses tree without killing the python script
+            return subprocess.Popen(f"""{pre_path} {executable} {' '.join(args)} 2>&1 | tee ~/mylogs/UE1-$(date +"%m%d%H%M").log | tee ~/last_log""", shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, preexec_fn=os.setsid)
+        else:
+            os.system(f"""{pre_path} {executable} {' '.join(args)} 2>&1 | tee ~/mylogs/UE1-$(date +"%m%d%H%M").log | tee ~/last_log""")
+
+    def run_scan(self):
+        i = 0
+        while True:
+            arfcn = self.conf['arfcns'][i % len(self.conf['arfcns'])]
+            self.set_params(arfcn)
+            print(f"Starting UE on arfcn={arfcn}")
+            p = self.run_ue(fork=True)
+            pgid = os.getpgid(p.pid)
+            try:
+                time.sleep(30)
+            except (KeyboardInterrupt, SystemExit):
+                os.killpg(pgid, signal.SIGTERM)
+                print("Terminating nr-ue and child processes")
+                break
+            print(f"Killing pg{pgid}")
+            os.killpg(pgid, signal.SIGTERM)
+            i += 1
+            # if self.args.flash == 1:
+            #     flash_x310()
+            #     time.sleep(5)
+
+    def run_o1server(self):
+        subprocess.Popen(f"""python3 /home/wineslab/openairinterface5g/executables/o1_proto/server.py""",
+                         shell=True)  # , stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
 
 if __name__ == '__main__':
@@ -181,10 +218,10 @@ if __name__ == '__main__':
                         type=int)
     parser.add_argument('-t', '--type',
                         required=True,
-                        choices=['donor', 'relay', 'ue'])
+                        choices=['donor', 'relay', 'ue', 'scan'])
     parser.add_argument('--numa',
                         default=True,
-                        action='store_true')
+                        action='store_false')
     parser.add_argument('--gdb', default=False, action='store_true')
     parser.add_argument('--flash', '-f', default=False, action='store_true')
 
