@@ -115,7 +115,7 @@ class Ran:
         if self.args.gdb > 0:
             # gdb override numa
             pre_path = f'gdb --args '
-        executable = f"{OAI_PATH}/nr-softmodem "
+        executable = f"{OAI_PATH}/cmake_targets/ran_build/build/nr-softmodem "
         oai_args = [f"-O {BASE_CONF}", "--sa", "--usrp-tx-thread-config 1"]
         if self.prb >= 106 and self.numerology == 1:
             oai_args.append("-E")
@@ -151,7 +151,7 @@ class Ran:
         if self.args.gdb > 0:
             # gdb override numa
             pre_path = f'gdb --args'
-        executable = f"{OAI_PATH}/nr-uesoftmodem"
+        executable = f"{OAI_PATH}/cmake_targets/ran_build/build/nr-uesoftmodem"
         args = ["--dlsch-parallel 32",
                 "--sa",
                 f"--uicc0.imsi 20899000074{self.node_id[1:]}",
@@ -199,7 +199,7 @@ class Ran:
             #     time.sleep(5)
 
     def run_o1server(self):
-        subprocess.Popen(f"""python3 /root/openairinterface5g/openair3/O1/o1_proto/server.py""",
+        subprocess.Popen(f"""python3 {OAI_PATH}/openair3/O1/o1_proto/server.py""",
                          shell=True)  # , stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
 
