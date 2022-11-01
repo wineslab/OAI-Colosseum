@@ -139,7 +139,7 @@ class Ran:
                      f'--gNBs.[0].NETWORK_INTERFACES.GNB_IPV4_ADDRESS_FOR_FOR_NGU {local_ip}']
 
         # Set USRP addr
-        #oai_args += [f'--RUs.[0].sdr_addrs "addr={USRP_ADDR}"']
+        oai_args += [f'--RUs.[0].sdr_addrs "addr={USRP_ADDR}"']
         # Add option to increase the UE stability
         oai_args += [f'--continuous-tx']
         os.system(f"""{pre_path} {executable} {' '.join(oai_args)}  2>&1 | tee ~/mylogs/gNB-$(date +"%m%d%H%M").log | tee ~/last_log""")
@@ -155,7 +155,7 @@ class Ran:
         args = ["--dlsch-parallel 32",
                 "--sa",
                 f"--uicc0.imsi 20899000074{self.node_id[1:]}",
-                #f'--usrp-args "addr={USRP_ADDR}"',
+                f'--usrp-args "addr={USRP_ADDR}"',
                 f'--numerology {self.numerology}',
                 f'-r {self.prb}',
                 # This parameter changes from -s to -ssb after a certain commit ~w42
