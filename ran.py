@@ -199,7 +199,7 @@ class Ran:
             #     time.sleep(5)
 
     def run_o1server(self):
-        subprocess.Popen(f"""python3 /home/wineslab/openairinterface5g/openair3/O1/o1_proto/server.py""",
+        subprocess.Popen(f"""python3 /root/openairinterface5g/openair3/O1/o1_proto/server.py""",
                          shell=True)  # , stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
 
