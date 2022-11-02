@@ -63,6 +63,10 @@ class Ran:
         self.conf = self.conf_json[str(self.numerology)][str(self.prb)]
         self.set_params(arfcn=self.conf['arfcns'][self.channel])
         self.set_ips()
+        try:
+            os.remove('/root/last_log')
+        except:
+            pass
 
     def set_params(self, arfcn):
         self.arfcn = arfcn
@@ -75,12 +79,9 @@ class Ran:
         self.node_id = self.main_ip.split('.')[3]
 
     def run(self):
-        self.run_o1server()
-        try:
-            os.remove('/root/last_log')
-        except:
-            pass
-        if self.args.flash == 1:
+        if self.args.o1server:
+            self.run_o1server()
+        if self.args.flash:
             flash_x310()
             time.sleep(5)
         if self.type == 'donor':
@@ -191,12 +192,12 @@ class Ran:
                 os.killpg(pgid, signal.SIGTERM)
                 print("Terminating nr-ue and child processes")
                 break
-            print(f"Killing pg{pgid}")
+            print(f"Killing process group {pgid}")
             os.killpg(pgid, signal.SIGTERM)
             i += 1
-            # if self.args.flash == 1:
-            #     flash_x310()
-            #     time.sleep(5)
+            if self.args.flash == 1:
+                flash_x310()
+                time.sleep(5)
 
     def run_o1server(self):
         subprocess.Popen(f"""python3 {OAI_PATH}/openair3/O1/o1_proto/server.py""",
@@ -224,6 +225,7 @@ if __name__ == '__main__':
                         action='store_false')
     parser.add_argument('--gdb', default=False, action='store_true')
     parser.add_argument('--flash', '-f', default=False, action='store_true')
+    parser.add_argument('--o1server', '-o', default=1, type=int)
 
     args = parser.parse_args()
     r = Ran(args)
