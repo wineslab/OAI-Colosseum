@@ -34,12 +34,13 @@ def get_locationandbandwidth(prb):
         return 275*(prb-1)
 
 
-def subst_bindip(local_ip, dev):
+def subst_bindip(local_ip, dev, if_freq):
     # Workaround while the bug with CLI params is fixed
     os.system(f"""sed -i "/GNB_INTERFACE_NAME_FOR_NG_AMF/ c \    GNB_INTERFACE_NAME_FOR_NG_AMF              = \\"{dev}\\";" {BASE_CONF};""")
     os.system(f"""sed -i "/GNB_INTERFACE_NAME_FOR_NGU/ c \    GNB_INTERFACE_NAME_FOR_NGU              = \\"{dev}\\";" {BASE_CONF};""")
     os.system(f"""sed -i "/GNB_IPV4_ADDRESS_FOR_NG_AMF/ c \    GNB_IPV4_ADDRESS_FOR_NG_AMF              = \\"{local_ip}/24\\";" {BASE_CONF};""")
     os.system(f"""sed -i "/GNB_IPV4_ADDRESS_FOR_NGU/ c \    GNB_IPV4_ADDRESS_FOR_NGU                 = \\"{local_ip}/24\\";" {BASE_CONF};""")
+    os.system(f"""sed -i "/if_freq/ c \if_freq = \\{if_freq}L\\;" {BASE_CONF};""")
 
 
 def flash_x310():
@@ -61,7 +62,9 @@ class Ran:
         with open('conf.json', 'r') as fr:
             self.conf_json = json.load(fr)
         self.conf = self.conf_json[str(self.numerology)][str(self.prb)]
+        self.set_if_freq(self.channel)
         self.set_params(arfcn=self.conf['arfcns'][self.channel])
+
         self.set_ips()
         try:
             os.remove('/root/last_log')
@@ -72,6 +75,12 @@ class Ran:
         self.arfcn = arfcn
         self.pointa = pointa_from_ssb(self.arfcn, self.prb)
         self.ssb_frequency = int(nr.get_frequency(self.arfcn)*1e6)
+
+    def set_if_freq(self, channel):
+        if self.args.if_freq:
+            self.if_freq = self.conf['if_freqs'][channel]
+        else:
+            self.if_freq = 0
 
     def set_ips(self):
         self.main_ip = os.popen(f"ip -f inet addr show {MAIN_DEV} | grep -Po 'inet \K[\d.]+'").read().strip()
@@ -107,7 +116,7 @@ class Ran:
         else:
             print("IAB type error")
             exit(0)
-        subst_bindip(local_ip, local_dev)
+        subst_bindip(local_ip, local_dev, self.if_freq)
 
         LABW = get_locationandbandwidth(self.prb)
         pre_path = ""
@@ -168,7 +177,8 @@ class Ran:
                 f'-A {self.conf["timing_advance"]}',
                 '--clock-source 1',
                 '--time-source 1',
-                '--ue-fo-compensation']
+                '--ue-fo-compensation',
+                f'--if_freq {self.if_freq}']
         if self.prb >= 106 and self.numerology == 1:
             # USRP X3*0 needs to lower the sample rate to 3/4
             args.append("-E")
@@ -181,9 +191,13 @@ class Ran:
     def run_scan(self):
         i = 0
         while True:
-            arfcn = self.conf['arfcns'][i % len(self.conf['arfcns'])]
-            self.set_params(arfcn)
-            print(f"Starting UE on arfcn={arfcn}")
+            if self.if_freq:
+                self.set_if_freq(i % len(self.conf['if_freqs']))
+                print(f"Starting UE on if_freq={self.if_freq}")
+            else:
+                arfcn = self.conf['arfcns'][i % len(self.conf['arfcns'])]
+                self.set_params(arfcn)
+                print(f"Starting UE on arfcn={arfcn}")
             p = self.run_ue(fork=True)
             pgid = os.getpgid(p.pid)
             try:
@@ -226,6 +240,7 @@ if __name__ == '__main__':
     parser.add_argument('--gdb', default=False, action='store_true')
     parser.add_argument('--flash', '-f', default=False, action='store_true')
     parser.add_argument('--o1server', '-o', default=1, type=int)
+    parser.add_argument('--if_freq', default=0, type=int)
 
     args = parser.parse_args()
     r = Ran(args)
