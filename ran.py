@@ -59,6 +59,10 @@ class Ran:
         self.numerology = args.numerology
         self.channel = args.channel
         self.type = args.type
+        self.mode = args.mode
+        self.f1_remote_node = args.f1_remote_node
+        if self.mode == 'phy-test':
+            self.phytest = args.phytestargs
         with open('conf.json', 'r') as fr:
             self.conf_json = json.load(fr)
         self.conf = self.conf_json[str(self.numerology)][str(self.prb)]
@@ -95,6 +99,10 @@ class Ran:
             time.sleep(5)
         if self.type == 'donor':
             self.run_gnb(type='donor')
+        elif self.type == 'cu':
+            self.run_gnb(type='cu')
+        elif self.type == 'du':
+            self.run_gnb(type='du')
         elif self.type == 'relay':
             self.run_gnb(type='relay')
         elif self.type == 'ue':
@@ -106,16 +114,13 @@ class Ran:
             exit(0)
 
     def run_gnb(self, type):
-        if type == 'donor':
+        if type == 'donor' or type == 'cu':
             local_ip = self.main_ip
             local_dev = MAIN_DEV
             set_route(MAIN_DEV)
         elif type == 'relay':
             local_ip = self.iab_ip
             local_dev = IAB_DEV
-        else:
-            print("IAB type error")
-            exit(0)
         subst_bindip(local_ip, local_dev, self.if_freq)
 
         LABW = get_locationandbandwidth(self.prb)
@@ -140,6 +145,29 @@ class Ran:
                      f'--gNBs.[0].servingCellConfigCommon.[0].ul_carrierBandwidth {self.prb}',
                      f'--gNBs.[0].servingCellConfigCommon.[0].initialDLBWPlocationAndBandwidth {LABW}',
                      f'--gNBs.[0].servingCellConfigCommon.[0].initialULBWPlocationAndBandwidth {LABW}']
+        # Set F1 parameters
+        if self.args.type == 'cu':
+            oai_args += ['--gNBs.[0].tr_s_preference "f1"',
+                         '--gNBs.[0].local_s_if_name "lo"',
+                         f'--gNBs.[0].local_s_address "{self.main_ip}"',
+                         f'--gNBs.[0].remote_s_address "{self.f1_remote_node}"',
+                         '--gNBs.[0].local_s_portc 501',
+                         '--gNBs.[0].local_s_portd 2252',
+                         '--gNBs.[0].remote_s_portc 500',
+                         '--gNBs.[0].remote_s_portd 2252']
+        elif self.args.type == 'du':
+            oai_args += ['--MACRLCs.[0].num_cc 1',
+                         '--MACRLCs.[0].tr_s_preference "local_L1"',
+                         '--MACRLCs.[0].tr_n_preference "f1"',
+                         '--MACRLCs.[0].local_s_if_name "lo"',
+                         f'--MACRLCs.[0].local_n_address "{self.main_ip}"',
+                         f'--MACRLCs.[0].remote_n_address "{self.f1_remote_node}"',
+                         '--MACRLCs.[0].local_s_portc 500',
+                         '--MACRLCs.[0].local_s_portd 2152',
+                         '--MACRLCs.[0].remote_s_portc 501',
+                         '--MACRLCs.[0].remote_s_portd 2152']
+        elif self.args.mode == 'phy-test':
+            oai_args += [f'--phy-test {self.phytest}']
         # Set AMF parameters
         # BUG: this cli command is not working, wait for answer from OAI
         oai_args += [f'--gNBs.[0].amf_ip_address.[0].ipv4 {AMF_IP}',
@@ -152,6 +180,7 @@ class Ran:
         oai_args += [f'--RUs.[0].sdr_addrs "addr={USRP_ADDR}"']
         # Add option to increase the UE stability
         oai_args += [f'--continuous-tx']
+        oai_args += ["--thread-pool '-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1'"]
         os.system(f"""{pre_path} {executable} {' '.join(oai_args)}  2>&1 | tee ~/mylogs/gNB-$(date +"%m%d%H%M").log | tee ~/last_log""")
 
     def run_ue(self, fork=False):
@@ -162,14 +191,14 @@ class Ran:
             # gdb override numa
             pre_path = f'gdb --args'
         executable = f"{OAI_PATH}/cmake_targets/ran_build/build/nr-uesoftmodem"
-        args = ["--dlsch-parallel 32",
-                "--sa",
+        args = ["--thread-pool '-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1",
+                f'--{self.mode}',
                 f"--uicc0.imsi 20899000074{self.node_id[1:]}",
                 f'--usrp-args "addr={USRP_ADDR}"',
                 f'--numerology {self.numerology}',
                 f'-r {self.prb}',
                 # This parameter changes from -s to -ssb after a certain commit ~w42
-                f'-s {self.conf["ssb_start"]}',
+                f'--ssb {self.conf["ssb_start"]}',
                 '--band 78',
                 f'-C {self.ssb_frequency}',
                 '--nokrnmod 1',
@@ -233,7 +262,14 @@ if __name__ == '__main__':
                         type=int)
     parser.add_argument('-t', '--type',
                         required=True,
-                        choices=['donor', 'relay', 'ue', 'scan'])
+                        choices=['donor', 'relay', 'ue', 'scan', 'cu', 'du'])
+    parser.add_argument('-f', '--f1_remote_node',
+                        help='Address of F1 remote node address')
+    parser.add_argument('-m', '--mode',
+                        required=True,
+                        choices=['sa', 'phy-test'])
+    parser.add_argument('-P', '--phytestargs',
+                        help='phy-test mode parameters: -D: DLSCH sched bitmap, -U: ULSCH sched bitmap, -m: DL MCS, -t UL MCS, -M: DL PRBs, -T: UL PRBs')
     parser.add_argument('--numa',
                         default=True,
                         action='store_false')
