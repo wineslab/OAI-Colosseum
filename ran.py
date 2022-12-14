@@ -95,9 +95,9 @@ class Ran:
                          f'--MACRLCs.[0].local_n_address "{self.main_ip}"',
                          f'--MACRLCs.[0].remote_n_address "{self.f1_remote_node}"',
                          '--MACRLCs.[0].local_n_portc 500',
-                         '--MACRLCs.[0].local_n_portd 2152',
+                         '--MACRLCs.[0].local_n_portd 2252',
                          '--MACRLCs.[0].remote_n_portc 501',
-                         '--MACRLCs.[0].remote_n_portd 2152']
+                         '--MACRLCs.[0].remote_n_portd 2252']
             elif f1_type == 'donor':
                 args += ['--MACRLCs.[0].tr_n_preference "local_RRC"']
             l1s = 'L1s = \(\{ \}\)\;'
@@ -134,9 +134,9 @@ class Ran:
                      f'--gNBs.[0].local_s_address "{self.main_ip}"',
                      f'--gNBs.[0].remote_s_address "{self.f1_remote_node}"',
                      f'--gNBs.[0].local_s_portc 501',
-                     '--gNBs.[0].local_s_portd 2152',
+                     '--gNBs.[0].local_s_portd 2252',
                      '--gNBs.[0].remote_s_portc 500',
-                     '--gNBs.[0].remote_s_portd 2152']
+                     '--gNBs.[0].remote_s_portd 2252']
         return args
 
     def set_params(self, arfcn):
