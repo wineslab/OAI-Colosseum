@@ -51,6 +51,7 @@ def reset_x310():
     x300 = ctrl_socket(addr=USRP_ADDR)
     x300.poke_print(0x100058, 1)
 
+
 class Ran:
     def __init__(self, args):
         self.args = args
@@ -156,8 +157,6 @@ class Ran:
         self.node_id = self.main_ip.split('.')[3]
 
     def run(self):
-        if self.args.o1server:
-            self.run_o1server()
         if self.args.flash:
             flash_x310()
             time.sleep(5)
@@ -170,9 +169,7 @@ class Ran:
         elif self.type == 'relay':
             self.run_gnb(type='relay')
         elif self.type == 'ue':
-            self.run_ue(fork=False)
-        elif self.type == 'scan':
-            self.run_scan()
+            self.run_ue()
         else:
             print("Error")
             exit(0)
@@ -229,7 +226,7 @@ class Ran:
         #os.system(f"""{pre_path} {executable} {' '.join(oai_args)}  2>&1 | tee ~/mylogs/gNB-$(date +"%m%d%H%M").log | tee ~/last_log""")
         os.system(f"""{pre_path} {executable} {' '.join(oai_args)}""")
 
-    def run_ue(self, fork=False):
+    def run_ue(self):
         main_exe = f"{OAI_PATH}/cmake_targets/ran_build/build/nr-uesoftmodem"
         pre_path = ""
         if self.args.numa > 0:
@@ -264,40 +261,7 @@ class Ran:
         if self.prb >= 106 and self.numerology == 1:
             # USRP X3*0 needs to lower the sample rate to 3/4
             args.append("-E")
-        if fork:
-            # Fork to a new subprocess w/o std[err|out] redirection and change the Session Id so that we can kill the subproceses tree without killing the python script
-            return subprocess.Popen(f"""{pre_path} {executable} {' '.join(args)} 2>&1 | tee ~/mylogs/UE1-$(date +"%m%d%H%M").log | tee ~/last_log""", shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, preexec_fn=os.setsid)
-        else:
-            os.system(f"""{pre_path} {executable} {' '.join(args)} 2>&1 | tee ~/mylogs/UE1-$(date +"%m%d%H%M").log | tee ~/last_log""")
-
-    def run_scan(self):
-        i = 0
-        while True:
-            if self.if_freq:
-                self.set_if_freq(i % len(self.conf['if_freqs']))
-                print(f"Starting UE on if_freq={self.if_freq}")
-            else:
-                arfcn = self.conf['arfcns'][i % len(self.conf['arfcns'])]
-                self.set_params(arfcn)
-                print(f"Starting UE on arfcn={arfcn}")
-            p = self.run_ue(fork=True)
-            pgid = os.getpgid(p.pid)
-            try:
-                time.sleep(30)
-            except (KeyboardInterrupt, SystemExit):
-                os.killpg(pgid, signal.SIGTERM)
-                print("Terminating nr-ue and child processes")
-                break
-            print(f"Killing process group {pgid}")
-            os.killpg(pgid, signal.SIGTERM)
-            i += 1
-            if self.args.flash == 1:
-                flash_x310()
-                time.sleep(5)
-
-    def run_o1server(self):
-        subprocess.Popen(f"""python3 {OAI_PATH}/openair3/O1/o1_proto/server.py""",
-                         shell=True)  # , stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        os.system(f"""{pre_path} {executable} {' '.join(args)} 2>&1 | tee ~/mylogs/UE1-$(date +"%m%d%H%M").log | tee ~/last_log""")
 
 
 if __name__ == '__main__':
@@ -333,7 +297,6 @@ if __name__ == '__main__':
                         action='store_false')
     parser.add_argument('--gdb', default=False, action='store_true')
     parser.add_argument('--flash', '-f', default=False, action='store_true')
-    parser.add_argument('--o1server', '-o', default=1, type=int)
     parser.add_argument('--if_freq', default=0, type=int)
 
     args = parser.parse_args()
