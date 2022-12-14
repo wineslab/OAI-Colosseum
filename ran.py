@@ -51,6 +51,7 @@ def reset_x310():
     x300 = ctrl_socket(addr=USRP_ADDR)
     x300.poke_print(0x100058, 1)
 
+
 class Ran:
     def __init__(self, args):
         self.args = args
@@ -315,12 +316,13 @@ if __name__ == '__main__':
                         type=int)
     parser.add_argument('-t', '--type',
                         required=True,
-                        choices=['donor', 'relay', 'ue', 'scan', 'cu', 'du'])
+                        choices=['donor', 'relay', 'ue', 'cu', 'du'])
     parser.add_argument('-F', '--f1_remote_node',
                         help='Address of F1 remote node address')
     parser.add_argument('-m', '--mode',
                         required=True,
-                        choices=['sa', 'phy-test'])
+                        choices=['sa', 'phy-test'],
+                        default='sa')
     parser.add_argument('-P', '--phytestargs',
                         type=str,
                         default="\-m9 \-t9 \-M106 \-T106 \-D130175 \-U918400",
@@ -333,7 +335,6 @@ if __name__ == '__main__':
                         action='store_false')
     parser.add_argument('--gdb', default=False, action='store_true')
     parser.add_argument('--flash', '-f', default=False, action='store_true')
-    parser.add_argument('--o1server', '-o', default=1, type=int)
     parser.add_argument('--if_freq', default=0, type=int)
 
     args = parser.parse_args()
