@@ -83,60 +83,60 @@ class Ran:
         if f1_type == 'du' or f1_type == 'donor':
             macrlcs = 'MACRLCs = \(\{ \}\)\;'
             os.system(f"echo {macrlcs} >> {self.config_file}")
-            args += ["--MACRLCs.[0].num_cc 1",
-                     "--MACRLCs.[0].tr_s_preference 'local_L1'",
-                     "--MACRLCs.[0].pusch_TargetSNRx10 150",
-                     "--MACRLCs.[0].pucch_TargetSNRx10 200",
-                     "--MACRLCs.[0].ul_prbblack_SNR_threshold 10",
-                     "--MACRLCs.[0].ulsch_max_frame_inactivity 0"]
+            args += ['--MACRLCs.[0].num_cc 1',
+                     '--MACRLCs.[0].tr_s_preference "local_L1"',
+                     '--MACRLCs.[0].pusch_TargetSNRx10 150',
+                     '--MACRLCs.[0].pucch_TargetSNRx10 200',
+                     '--MACRLCs.[0].ul_prbblack_SNR_threshold 10',
+                     '--MACRLCs.[0].ulsch_max_frame_inactivity 0']
             if f1_type == 'du':
-                args += ["--MACRLCs.[0].tr_n_preference 'f1'",
-                         "--MACRLCs.[0].local_n_if_name 'col0'",
-                         f"--MACRLCs.[0].local_n_address '{self.main_ip}'",
-                         f"--MACRLCs.[0].remote_n_address '{self.f1_remote_node}'",
-                         "--MACRLCs.[0].local_n_portc 500",
-                         "--MACRLCs.[0].local_n_portd 2152",
-                         "--MACRLCs.[0].remote_n_portc 501",
-                         "--MACRLCs.[0].remote_n_portd 2152"]
+                args += ['--MACRLCs.[0].tr_n_preference "f1"',
+                         '--MACRLCs.[0].local_n_if_name "col0"',
+                         f'--MACRLCs.[0].local_n_address "{self.main_ip}"',
+                         f'--MACRLCs.[0].remote_n_address "{self.f1_remote_node}"',
+                         '--MACRLCs.[0].local_n_portc 500',
+                         '--MACRLCs.[0].local_n_portd 2152',
+                         '--MACRLCs.[0].remote_n_portc 501',
+                         '--MACRLCs.[0].remote_n_portd 2152']
             elif f1_type == 'donor':
-                args += ["--MACRLCs.[0].tr_n_preference 'local_RRC'"]
+                args += ['--MACRLCs.[0].tr_n_preference "local_RRC"']
             l1s = 'L1s = \(\{ \}\)\;'
             os.system(f"echo {l1s} >> {self.config_file}")
-            args += ["--L1s.[0].num_cc 1",
-                     "--L1s.[0].tr_n_preference 'local_mac'",
-                     "--L1s.[0].pusch_proc_threads 32",
-                     "--L1s.[0].prach_dtx_threshold 120",
-                     "--L1s.[0].pucch0_dtx_threshold 150",
-                     "--L1s.[0].ofdm_offset_divisor 8"]
+            args += ['--L1s.[0].num_cc 1',
+                     '--L1s.[0].tr_n_preference "local_mac"',
+                     '--L1s.[0].pusch_proc_threads 32',
+                     '--L1s.[0].prach_dtx_threshold 120',
+                     '--L1s.[0].pucch0_dtx_threshold 150',
+                     '--L1s.[0].ofdm_offset_divisor 8']
             rus = 'RUs = \(\{ \}\)\;'
             os.system(f"echo {rus} >> {self.config_file}")
-            args += ["--RUs.[0].local_rf 'yes'",
-                     "--RUs.[0].nb_tx 1",
-                     "--RUs.[0].nb_rx 1",
-                     "--RUs.[0].att_tx 0",
-                     "--RUs.[0].att_rx 0",
-                     "--RUs.[0].bands [78]",
-                     "--RUs.[0].max_pdschReferenceSignalPower -27",
-                     "--RUs.[0].max_rxgain 114",
-                     "--RUs.[0].eNB_instances [0]",
-                     "--RUs.[0].bf_weights [0x00007fff, 0x0000, 0x0000, 0x0000]",
-                     "--RUs.[0].clock_src 'external'",
-                     "--RUs.[0].time_src 'external'",
-                     f"--RUs.[0].sdr_addrs 'addr={USRP_ADDR}'",
-                     f"--RUs.[0].if_freq {self.if_freq}"]
+            args += ['--RUs.[0].local_rf "yes"',
+                     '--RUs.[0].nb_tx 1',
+                     '--RUs.[0].nb_rx 1',
+                     '--RUs.[0].att_tx 0',
+                     '--RUs.[0].att_rx 0',
+                     '--RUs.[0].bands [78]',
+                     '--RUs.[0].max_pdschReferenceSignalPower -27',
+                     '--RUs.[0].max_rxgain 114',
+                     '--RUs.[0].eNB_instances [0]',
+                     '--RUs.[0].bf_weights [0x00007fff, 0x0000, 0x0000, 0x0000]',
+                     '--RUs.[0].clock_src "external"',
+                     '--RUs.[0].time_src "external"',
+                     f'--RUs.[0].sdr_addrs "addr={USRP_ADDR}"',
+                     f'--RUs.[0].if_freq {self.if_freq}']
             tss = 'THREAD_STRUCT = \(\{ \}\)\;'
             os.system(f"echo {tss} >> {self.config_file}")
             args += ['--THREAD_STRUCT.[0].parallel_config "PARALLEL_SINGLE_THREAD"',
                      '--THREAD_STRUCT.[0].worker_config "WORKER_ENABLE"']
         elif f1_type == 'cu':
-            args += ["--gNBs.[0].tr_s_preference 'f1'",
-                     "--gNBs.[0].local_s_if_name 'col0'",
-                     f"--gNBs.[0].local_s_address '{self.main_ip}'",
-                     f"--gNBs.[0].remote_s_address '{self.f1_remote_node}'",
-                     f"--gNBs.[0].local_s_portc 501",
-                     "--gNBs.[0].local_s_portd 2152",
-                     "--gNBs.[0].remote_s_portc 500",
-                     "--gNBs.[0].remote_s_portd 2152"]
+            args += ['--gNBs.[0].tr_s_preference "f1"',
+                     '--gNBs.[0].local_s_if_name "col0"',
+                     f'--gNBs.[0].local_s_address "{self.main_ip}"',
+                     f'--gNBs.[0].remote_s_address "{self.f1_remote_node}"',
+                     f'--gNBs.[0].local_s_portc 501',
+                     '--gNBs.[0].local_s_portd 2152',
+                     '--gNBs.[0].remote_s_portc 500',
+                     '--gNBs.[0].remote_s_portd 2152']
         return args
 
     def set_params(self, arfcn):
