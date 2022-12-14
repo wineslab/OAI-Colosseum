@@ -34,13 +34,13 @@ def get_locationandbandwidth(prb):
         return 275*(prb-1)
 
 
-def subst_bindip(local_ip, dev, if_freq):
+def subst_bindip(local_ip, dev, if_freq, conf_file):
     # Workaround while the bug with CLI params is fixed
-    os.system(f"""sed -i "/GNB_INTERFACE_NAME_FOR_NG_AMF/ c \    GNB_INTERFACE_NAME_FOR_NG_AMF              = \\"{dev}\\";" {BASE_CONF};""")
-    os.system(f"""sed -i "/GNB_INTERFACE_NAME_FOR_NGU/ c \    GNB_INTERFACE_NAME_FOR_NGU              = \\"{dev}\\";" {BASE_CONF};""")
-    os.system(f"""sed -i "/GNB_IPV4_ADDRESS_FOR_NG_AMF/ c \    GNB_IPV4_ADDRESS_FOR_NG_AMF              = \\"{local_ip}/24\\";" {BASE_CONF};""")
-    os.system(f"""sed -i "/GNB_IPV4_ADDRESS_FOR_NGU/ c \    GNB_IPV4_ADDRESS_FOR_NGU                 = \\"{local_ip}/24\\";" {BASE_CONF};""")
-    os.system(f"""sed -i "/if_freq/ c \if_freq = \\{if_freq}L\\;" {BASE_CONF};""")
+    os.system(f"""sed -i "/GNB_INTERFACE_NAME_FOR_NG_AMF/ c \    GNB_INTERFACE_NAME_FOR_NG_AMF              = \\"{dev}\\";" {conf_file};""")
+    os.system(f"""sed -i "/GNB_INTERFACE_NAME_FOR_NGU/ c \    GNB_INTERFACE_NAME_FOR_NGU              = \\"{dev}\\";" {conf_file};""")
+    os.system(f"""sed -i "/GNB_IPV4_ADDRESS_FOR_NG_AMF/ c \    GNB_IPV4_ADDRESS_FOR_NG_AMF              = \\"{local_ip}/24\\";" {conf_file};""")
+    os.system(f"""sed -i "/GNB_IPV4_ADDRESS_FOR_NGU/ c \    GNB_IPV4_ADDRESS_FOR_NGU                 = \\"{local_ip}/24\\";" {conf_file};""")
+    os.system(f"""sed -i "/if_freq/ c \if_freq = \\{if_freq}L\\;" {conf_file};""")
 
 
 def flash_x310():
@@ -51,7 +51,6 @@ def reset_x310():
     x300 = ctrl_socket(addr=USRP_ADDR)
     x300.poke_print(0x100058, 1)
 
-
 class Ran:
     def __init__(self, args):
         self.args = args
@@ -59,6 +58,11 @@ class Ran:
         self.numerology = args.numerology
         self.channel = args.channel
         self.type = args.type
+        self.mode = args.mode
+        self.f1_remote_node = args.f1_remote_node
+        self.config_file = '/tmp/oai_config.conf'
+        if self.mode == 'phy-test':
+            self.phytest = args.phytestargs
         with open('conf.json', 'r') as fr:
             self.conf_json = json.load(fr)
         self.conf = self.conf_json[str(self.numerology)][str(self.prb)]
@@ -70,6 +74,70 @@ class Ran:
             os.remove('/root/last_log')
         except:
             pass
+
+    def set_config_file(self, f1_type, local_ip, local_dev):
+        os.system(f"cp {BASE_CONF} {self.config_file}")
+        subst_bindip(local_ip, local_dev, self.if_freq, self.config_file)
+        args = []
+        # common for DU and donor (monolithic)
+        if f1_type == 'du' or f1_type == 'donor':
+            macrlcs = 'MACRLCs = \(\{ \}\)\;'
+            os.system(f"echo {macrlcs} >> {self.config_file}")
+            args += ['--MACRLCs.[0].num_cc 1',
+                     '--MACRLCs.[0].tr_s_preference "local_L1"',
+                     '--MACRLCs.[0].pusch_TargetSNRx10 150',
+                     '--MACRLCs.[0].pucch_TargetSNRx10 200',
+                     '--MACRLCs.[0].ul_prbblack_SNR_threshold 10',
+                     '--MACRLCs.[0].ulsch_max_frame_inactivity 0']
+            if f1_type == 'du':
+                args += ['--MACRLCs.[0].tr_n_preference "f1"',
+                         '--MACRLCs.[0].local_n_if_name "col0"',
+                         f'--MACRLCs.[0].local_n_address "{self.main_ip}"',
+                         f'--MACRLCs.[0].remote_n_address "{self.f1_remote_node}"',
+                         '--MACRLCs.[0].local_n_portc 500',
+                         '--MACRLCs.[0].local_n_portd 2252',
+                         '--MACRLCs.[0].remote_n_portc 501',
+                         '--MACRLCs.[0].remote_n_portd 2252']
+            elif f1_type == 'donor':
+                args += ['--MACRLCs.[0].tr_n_preference "local_RRC"']
+            l1s = 'L1s = \(\{ \}\)\;'
+            os.system(f"echo {l1s} >> {self.config_file}")
+            args += ['--L1s.[0].num_cc 1',
+                     '--L1s.[0].tr_n_preference "local_mac"',
+                     '--L1s.[0].pusch_proc_threads 32',
+                     '--L1s.[0].prach_dtx_threshold 120',
+                     '--L1s.[0].pucch0_dtx_threshold 150',
+                     '--L1s.[0].ofdm_offset_divisor 8']
+            rus = 'RUs = \(\{ \}\)\;'
+            os.system(f"echo {rus} >> {self.config_file}")
+            args += ['--RUs.[0].local_rf "yes"',
+                     '--RUs.[0].nb_tx 1',
+                     '--RUs.[0].nb_rx 1',
+                     '--RUs.[0].att_tx 0',
+                     '--RUs.[0].att_rx 0',
+                     '--RUs.[0].bands [78]',
+                     '--RUs.[0].max_pdschReferenceSignalPower -27',
+                     '--RUs.[0].max_rxgain 114',
+                     '--RUs.[0].eNB_instances [0]',
+                     '--RUs.[0].bf_weights [0x00007fff, 0x0000, 0x0000, 0x0000]',
+                     '--RUs.[0].clock_src "external"',
+                     '--RUs.[0].time_src "external"',
+                     f'--RUs.[0].sdr_addrs "addr={USRP_ADDR}"',
+                     f'--RUs.[0].if_freq {self.if_freq}']
+            tss = 'THREAD_STRUCT = \(\{ \}\)\;'
+            os.system(f"echo {tss} >> {self.config_file}")
+            args += ['--THREAD_STRUCT.[0].parallel_config "PARALLEL_SINGLE_THREAD"',
+                     '--THREAD_STRUCT.[0].worker_config "WORKER_ENABLE"']
+        elif f1_type == 'cu':
+            args += ['--gNBs.[0].tr_s_preference "f1"',
+                     '--gNBs.[0].local_s_if_name "col0"',
+                     f'--gNBs.[0].local_s_address "{self.main_ip}"',
+                     f'--gNBs.[0].remote_s_address "{self.f1_remote_node}"',
+                     f'--gNBs.[0].local_s_portc 501',
+                     '--gNBs.[0].local_s_portd 2252',
+                     '--gNBs.[0].remote_s_portc 500',
+                     '--gNBs.[0].remote_s_portd 2252']
+        return args
 
     def set_params(self, arfcn):
         self.arfcn = arfcn
@@ -95,6 +163,10 @@ class Ran:
             time.sleep(5)
         if self.type == 'donor':
             self.run_gnb(type='donor')
+        elif self.type == 'cu':
+            self.run_gnb(type='cu')
+        elif self.type == 'du':
+            self.run_gnb(type='du')
         elif self.type == 'relay':
             self.run_gnb(type='relay')
         elif self.type == 'ue':
@@ -106,18 +178,14 @@ class Ran:
             exit(0)
 
     def run_gnb(self, type):
-        if type == 'donor':
+        if type != 'relay':
             local_ip = self.main_ip
             local_dev = MAIN_DEV
             set_route(MAIN_DEV)
-        elif type == 'relay':
+        else:
             local_ip = self.iab_ip
             local_dev = IAB_DEV
-        else:
-            print("IAB type error")
-            exit(0)
-        subst_bindip(local_ip, local_dev, self.if_freq)
-
+        f1_cmd_args = self.set_config_file(type, local_ip, local_dev)
         LABW = get_locationandbandwidth(self.prb)
         pre_path = ""
         if self.args.numa > 0:
@@ -126,9 +194,16 @@ class Ran:
             # gdb override numa
             pre_path = f'gdb --args '
         executable = f"{OAI_PATH}/cmake_targets/ran_build/build/nr-softmodem "
-        oai_args = [f"-O {BASE_CONF}", "--sa", "--usrp-tx-thread-config 1"]
+        oai_args = [f"-O {self.config_file}", "--usrp-tx-thread-config 1"]
         if self.prb >= 106 and self.numerology == 1:
             oai_args.append("-E")
+        if self.args.rfsim > 0:
+            oai_args += ['--rfsim']
+        oai_args += [f'--{self.mode}']
+        if self.mode == 'phy-test':
+            oai_args += [f'{self.phytest}']
+        oai_args += [f'--continuous-tx']
+        oai_args += ["--thread-pool '-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1'"]
         # Set cell name and id
         oai_args += [f'--Active_gNBs "IAB-{self.node_id}"',
                      f'--gNBs.[0].gNB_ID {self.node_id}',
@@ -148,28 +223,28 @@ class Ran:
                      f'--gNBs.[0].NETWORK_INTERFACES.GNB_IPV4_ADDRESS_FOR_NG_AMF {local_ip}',
                      f'--gNBs.[0].NETWORK_INTERFACES.GNB_IPV4_ADDRESS_FOR_FOR_NGU {local_ip}']
 
-        # Set USRP addr
-        oai_args += [f'--RUs.[0].sdr_addrs "addr={USRP_ADDR}"']
+        # Set F1 parameters
+        oai_args += f1_cmd_args
         # Add option to increase the UE stability
-        oai_args += [f'--continuous-tx']
-        os.system(f"""{pre_path} {executable} {' '.join(oai_args)}  2>&1 | tee ~/mylogs/gNB-$(date +"%m%d%H%M").log | tee ~/last_log""")
+        #os.system(f"""{pre_path} {executable} {' '.join(oai_args)}  2>&1 | tee ~/mylogs/gNB-$(date +"%m%d%H%M").log | tee ~/last_log""")
+        os.system(f"""{pre_path} {executable} {' '.join(oai_args)}""")
 
     def run_ue(self, fork=False):
+        main_exe = f"{OAI_PATH}/cmake_targets/ran_build/build/nr-uesoftmodem"
         pre_path = ""
         if self.args.numa > 0:
             pre_path = f"numactl --cpunodebind=netdev:{USRP_DEV} --membind=netdev:{USRP_DEV}"
         if self.args.gdb > 0:
             # gdb override numa
             pre_path = f'gdb --args'
-        executable = f"{OAI_PATH}/cmake_targets/ran_build/build/nr-uesoftmodem"
-        args = ["--dlsch-parallel 32",
-                "--sa",
+        args = ["--thread-pool '-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1'",
+                f'--{self.mode}',
                 f"--uicc0.imsi 20899000074{self.node_id[1:]}",
                 f'--usrp-args "addr={USRP_ADDR}"',
                 f'--numerology {self.numerology}',
                 f'-r {self.prb}',
                 # This parameter changes from -s to -ssb after a certain commit ~w42
-                f'-s {self.conf["ssb_start"]}',
+                f'--ssb {self.conf["ssb_start"]}',
                 '--band 78',
                 f'-C {self.ssb_frequency}',
                 '--nokrnmod 1',
@@ -179,6 +254,13 @@ class Ran:
                 '--time-source 1',
                 '--ue-fo-compensation',
                 f'--if_freq {self.if_freq}']
+        if self.args.type == 'phy-test':
+            args += ["--phy-test"]
+        if self.args.rfsim > 0:
+            executable = f"RFSIMULATOR=127.0.0.1 {main_exe}"
+            args += ["--rfsim"]
+        else:
+            executable = main_exe
         if self.prb >= 106 and self.numerology == 1:
             # USRP X3*0 needs to lower the sample rate to 3/4
             args.append("-E")
@@ -233,7 +315,19 @@ if __name__ == '__main__':
                         type=int)
     parser.add_argument('-t', '--type',
                         required=True,
-                        choices=['donor', 'relay', 'ue', 'scan'])
+                        choices=['donor', 'relay', 'ue', 'scan', 'cu', 'du'])
+    parser.add_argument('-F', '--f1_remote_node',
+                        help='Address of F1 remote node address')
+    parser.add_argument('-m', '--mode',
+                        required=True,
+                        choices=['sa', 'phy-test'])
+    parser.add_argument('-P', '--phytestargs',
+                        type=str,
+                        default="\-m9 \-t9 \-M106 \-T106 \-D130175 \-U918400",
+                        help='phy-test mode parameters: -D: DLSCH sched bitmap, -U: ULSCH sched bitmap, -m: DL MCS, -t UL MCS, -M: DL PRBs, -T: UL PRBs')
+    parser.add_argument('--rfsim',
+                        default=False,
+                        action='store_true')
     parser.add_argument('--numa',
                         default=True,
                         action='store_false')
