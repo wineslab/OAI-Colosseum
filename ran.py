@@ -283,8 +283,8 @@ if __name__ == '__main__':
     parser.add_argument('-F', '--f1_remote_node',
                         help='Address of F1 remote node address')
     parser.add_argument('-m', '--mode',
-                        required=True,
-                        choices=['sa', 'phy-test'])
+                        choices=['sa', 'phy-test'],
+                        default='sa')
     parser.add_argument('-P', '--phytestargs',
                         type=str,
                         default="\-m9 \-t9 \-M106 \-T106 \-D130175 \-U918400",
