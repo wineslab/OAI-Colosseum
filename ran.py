@@ -199,6 +199,8 @@ class Ran:
         oai_args += [f'--{self.mode}']
         if self.mode == 'phy-test':
             oai_args += [f'{self.phytest}']
+        if self.args.scope:
+            oai_args += ['-d']
         oai_args += [f'--continuous-tx']
         oai_args += ["--thread-pool '-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1'"]
         # Set cell name and id
@@ -260,7 +262,9 @@ class Ran:
             executable = main_exe
         if self.prb >= 106 and self.numerology == 1:
             # USRP X3*0 needs to lower the sample rate to 3/4
-            args.append("-E")
+            args += ["-E"]
+        if self.args.scope:
+            args += ["-d"]
         os.system(f"""{pre_path} {executable} {' '.join(args)} 2>&1 | tee ~/mylogs/UE1-$(date +"%m%d%H%M").log | tee ~/last_log""")
 
 
@@ -298,6 +302,7 @@ if __name__ == '__main__':
     parser.add_argument('--gdb', default=False, action='store_true')
     parser.add_argument('--flash', '-f', default=False, action='store_true')
     parser.add_argument('--if_freq', default=0, type=int)
+    parser.add_argument('--scope', default=False, action='store_true', help='Activate softscope (scope needs to be compiled and SSH needs -X or -Y)')
 
     args = parser.parse_args()
     r = Ran(args)
