@@ -55,6 +55,7 @@ def reset_x310():
 class Ran:
     def __init__(self, args):
         self.args = args
+        self.execute = True
         self.prb = args.prb
         self.numerology = args.numerology
         self.channel = args.channel
@@ -266,7 +267,11 @@ class Ran:
             args += ["-E"]
         if self.args.scope:
             args += ["-d"]
-        os.system(f"""{pre_path} {executable} {' '.join(args)} 2>&1 | tee ~/mylogs/UE1-$(date +"%m%d%H%M").log | tee ~/last_log""")
+        final_cmd = f"""{pre_path} {executable} {' '.join(args)} 2>&1 | tee ~/mylogs/UE1-$(date +"%m%d%H%M").log | tee ~/last_log"""
+        if self.execute:
+            os.system(final_cmd)
+        else:
+            return final_cmd
 
 
 if __name__ == '__main__':
