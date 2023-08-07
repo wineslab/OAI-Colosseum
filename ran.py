@@ -271,7 +271,7 @@ class Ran:
         if self.execute:
             os.system(final_cmd)
         else:
-            return final_cmd
+            self.cmd_stored = final_cmd
 
 
 if __name__ == '__main__':

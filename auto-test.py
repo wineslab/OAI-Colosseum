@@ -81,7 +81,7 @@ def stop_and_kill_ue(thread):
 
 def run_and_check_conn_established(command_to_run):
     current_directory = "/root"
-    output_filename = 'last_log'
+    output_filename = '/root/last_log'
 
     # Create a separate thread and run the UE in it
     thread = CommandThread(command_to_run, current_directory)
@@ -157,13 +157,13 @@ def run_core_test(iperf_time):
     scan_docker_logs_and_do_stuff(docker_image_to_scan, iperf_time)
 
 def run_UE_test(args):
-    current_directory = "/root"
+    current_directory = '/root'
     args.mode = 'sa'
     args.type = 'ue'
     ue = UE(args)
     ue.execute = False
-    command_to_run = ue.run()
-    conn_established, ueThread = run_and_check_conn_established(command_to_run)
+    ue.run()
+    conn_established, ueThread = run_and_check_conn_established(ue.cmd_stored)
 
     if conn_established:
         interface_prefix = 'oaitun'
@@ -173,20 +173,21 @@ def run_UE_test(args):
             print(f"The IP address of interface {interface_prefix} is: {ip_address}")
             # default route
             add_route_cmd = "route add default gw 12.1.1.1"
-            subprocess.run(command, shell=True, check=True)
-            print("Default route added successfully.")
+            try:
+                subprocess.run(add_route_cmd, shell=True, check=True)
+                print("Default route added successfully.")
             except subprocess.CalledProcessError as e:
                 print(f"Error adding default route: {e}")
             except Exception as e:
                 print(f"An unexpected error occurred: {e}")
             # iperf 
             print("Starting iperf server job")
-            iperfSrvCmd = f'iperf -u -s -i 1 -B {ip_address} -t {iperf_time} > {current_directory}/iperf-UE-server.log'
+            iperfSrvCmd = f'iperf -u -s -i 1 -B {ip_address} -t {args.iperf_time} > {current_directory}/iperf-UE-server.log'
             iperfSrvThd = CommandThread(iperfSrvCmd, current_directory)
             iperfSrvThd.start()
 
             print("Starting iperf client job")
-            iperfClntCmd = f'iperf -u -i 1 -B {ip_address} -b 3M -c {dn_ip_address} -t {iperf_time} > {current_directory}/iperf-UE-client.log'
+            iperfClntCmd = f'iperf -u -i 1 -B {ip_address} -b 3M -c {dn_ip_address} -t {args.iperf_time} > {current_directory}/iperf-UE-client.log'
             iperfClntThd = CommandThread(iperfClntCmd, current_directory)
             iperfClntThd.start()
         else:
@@ -223,6 +224,14 @@ if __name__ == '__main__':
                         type=int)
     parser.add_argument('--flash', '-f', default=False, action='store_true')
     args = parser.parse_args()
+    args.f1_remote_node = '0.0.0.0'
+    args.if_freq = 0
+    args.numa = True
+    args.gdb = False
+    args.flash = False
+    args.rfsim = False
+    args.scope = False
+
     if args.mode == 'ue':
         run_UE_test(args)
     elif args.mode == 'core-nw':
