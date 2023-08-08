@@ -231,47 +231,46 @@ class Ran:
         os.system(f"""{pre_path} {executable} {' '.join(oai_args)}""")
 
     def run_ue(self):
-        main_exe = f"{OAI_PATH}/cmake_targets/ran_build/build/nr-uesoftmodem"
+        main_exe = [f'{OAI_PATH}cmake_targets/ran_build/build/nr-uesoftmodem']
         pre_path = ""
         if self.args.numa > 0:
-            pre_path = f"numactl --cpunodebind=netdev:{USRP_DEV} --membind=netdev:{USRP_DEV}"
+            pre_path = ['numactl', f'--cpunodebind=netdev:{USRP_DEV}', f'--membind=netdev:{USRP_DEV}']
         if self.args.gdb > 0:
             # gdb override numa
-            pre_path = f'gdb --args'
-        args = ["--thread-pool '-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1'",
+            pre_path = ['gdb', '--args']
+        args = ['--thread-pool', '-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1',
                 f'--{self.mode}',
-                f"--uicc0.imsi 20899000074{self.node_id[1:]}",
-                f'--usrp-args "addr={USRP_ADDR}"',
-                f'--numerology {self.numerology}',
-                f'-r {self.prb}',
+                '--uicc0.imsi', f'20899000074{self.node_id[1:]}',
+                '--usrp-args', f'addr={USRP_ADDR}',
+                '--numerology', f'{self.numerology}',
+                '-r', f'{self.prb}',
                 # This parameter changes from -s to -ssb after a certain commit ~w42
-                f'--ssb {self.conf["ssb_start"]}',
-                '--band 78',
-                f'-C {self.ssb_frequency}',
-                '--nokrnmod 1',
-                '--ue-txgain 0',
-                f'-A {self.conf["timing_advance"]}',
-                '--clock-source 1',
-                '--time-source 1',
+                '--ssb', f'{self.conf["ssb_start"]}',
+                '--band', '78',
+                '-C', f'{self.ssb_frequency}',
+                '--nokrnmod', '1',
+                '--ue-txgain', '0',
+                '-A', f'{self.conf["timing_advance"]}',
+                '--clock-source', '1',
+                '--time-source', '1',
                 '--ue-fo-compensation',
-                f'--if_freq {self.if_freq}']
+                '--if_freq', f'{self.if_freq}']
         if self.args.type == 'phy-test':
-            args += ["--phy-test"]
+            args += ['--phy-test']
         if self.args.rfsim > 0:
-            executable = f"RFSIMULATOR=127.0.0.1 {main_exe}"
-            args += ["--rfsim"]
+            executable = ['RFSIMULATOR=127.0.0.1', f'{main_exe}']
+            args += ['--rfsim']
         else:
             executable = main_exe
         if self.prb >= 106 and self.numerology == 1:
             # USRP X3*0 needs to lower the sample rate to 3/4
-            args += ["-E"]
+            args += ['-E']
         if self.args.scope:
-            args += ["-d"]
-        final_cmd = f"""{pre_path} {executable} {' '.join(args)} 2>&1 | tee ~/mylogs/UE1-$(date +"%m%d%H%M").log | tee ~/last_log"""
+            args += ['-d']
+        self.cmd_stored = pre_path + executable + args
+        final_cmd = f"""{' '.join(self.cmd_stored)} 2>&1 | tee ~/mylogs/UE1-$(date +"%m%d%H%M").log | tee ~/last_log"""
         if self.execute:
             os.system(final_cmd)
-        else:
-            self.cmd_stored = final_cmd
 
 
 if __name__ == '__main__':

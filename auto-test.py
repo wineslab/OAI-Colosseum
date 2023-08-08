@@ -1,5 +1,4 @@
 import subprocess
-import threading
 import signal
 import time
 import re
@@ -13,32 +12,13 @@ def handle_sigint(sig, frame):
     print("Stopping the process...")
     sys.exit(0)
 
-class CommandThread(threading.Thread):
-    def __init__(self, command, working_directory):
-        super(CommandThread, self).__init__()
-        self.command = command
-        self.working_directory = working_directory
-        self.process = None
-
-    def run(self):
-        # Run the command
-        self.process = subprocess.Popen(self.command, shell=True, cwd=self.working_directory, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-        self.process.wait()
-
-    def stop(self):
-        # Send SIGINT signal to the subprocess
-        self.process.send_signal(signal.SIGINT)
-
-    def kill(self):
-        if self.process and self.process.poll() is None:
-            self.process.terminate()
-
-def tail(file_path, target_string):
+def tail(file_path, target_string, max_num_search):
     # Start at the end of the file
     with open(file_path, 'r') as file:
         file.seek(0)  # Go to the beginning of the file
 
-        while True:
+        num_search = 0
+        while num_search < max_num_search:
             # Read new lines if available
             new_lines = file.readlines()
 
@@ -59,6 +39,7 @@ def tail(file_path, target_string):
                 return False
             else:
                 file.seek(curr_position)
+            num_search += 1
 
     return False
 
@@ -72,73 +53,92 @@ def get_interface_ip(interface_prefix):
                 return ip_address
     return None
 
-def stop_and_kill_ue(thread):
+def stop_and_kill_subp(process):
     print("Stopping UE")
-    thread.stop()
+    process.send_signal(signal.SIGINT)
+    time.sleep(1)
+    process.send_signal(signal.SIGINT)
     time.sleep(2)
-    thread.kill()
-    thread.join()
+    if process.poll() is None:
+        print('Process still running despite sending SIGINT. Force killing.')
+        process.send_signal(signal.SIGKILL)
+    process.wait()
 
 def run_and_check_conn_established(command_to_run):
-    current_directory = "/root"
+    current_directory = os.getcwd()
     output_filename = '/root/last_log'
+    output_file = open(output_filename, "w")
 
     # Create a separate thread and run the UE in it
-    thread = CommandThread(command_to_run, current_directory)
-    thread.start()
+    ueProcess = subprocess.Popen(command_to_run, stdout=output_file, stderr=subprocess.STDOUT)
 
-    # Perform scanning of logs and run iperf
     time.sleep(5)
 
+    # Perform scanning of logs and run iperf
     target_string = r'Starting sync detection'
-    init_sync_started = tail(output_filename, target_string)
+    init_sync_started = tail(output_filename, target_string, 100)
 
     target_string = r'SIB1 decoded'
-    sib1_decoded = tail(output_filename, target_string)
+    sib1_decoded = tail(output_filename, target_string, 100)
 
     target_string = r'Interface .* successfully configured, ip address'
-    conn_established = tail(output_filename, target_string)
+    conn_established = tail(output_filename, target_string, 10)
 
     if not conn_established:
         # Scanning logs failed (maybe UE crashed?)
-        stop_and_kill_ue(thread);
+        stop_and_kill_subp(ueProcess);
         # Restart again
-        res, thread = run_and_check_conn_established(command_to_run)
+        time.sleep(5)
+        print("Restarting UE")
+        res, ueProcess = run_and_check_conn_established(command_to_run)
 
-    return True, thread
+    return True, ueProcess
 
-def start_core_iperf(dn_ip_address, ip_address, iperf_time):
-    current_directory = os.getcwd()
-    print("Starting iperf server job")
-    iperfSrvCmd = f'docker exec -it oai-ext-dn iperf -u -s -i 1 -B {dn_ip_address} -t {iperf_time} > {current_directory}/iperf-core-server.log'
-    iperfSrvThd = CommandThread(iperfSrvCmd, current_directory)
-    iperfSrvThd.start()
+def start_core_iperf(imsi):
+    current_directory = '/root'
+    port = int('52'+imsi[-2:])
+    print(f"Starting iperf server job for {imsi} in port {port}")
+    output_filename = f'{current_directory}/iperf-core-server-ue-{imsi}.log'
+    output_file = open(output_filename, "w")
+    iperfSrvCmd = ['iperf3', '-s', '-p', f'{port}']
+    try:
+        iperfSrv = subprocess.Popen(iperfSrvCmd, stdout=output_file, stderr=subprocess.STDOUT)
+    except Exception as e:
+        print("Error starting server")
+        return None
 
-    print("Starting iperf client job")
-    iperfClntCmd = f'docker exec -it oai-ext-dn iperf -u -i 1 -B {dn_ip_address} -b 30M -c {ip_address} -t {iperf_time} > {current_directory}/iperf-core-client.log'
-    iperfClntThd = CommandThread(iperfClntCmd, current_directory)
-    iperfClntThd.start()
+    return iperfSrv
 
-def scan_docker_logs_and_do_stuff(service_name, iperf_time):
+def scan_docker_logs_and_do_stuff(service_name):
     command = f"docker logs {service_name} -f"  # Use `-f` flag for continuous log streaming
     dockerScanPocess = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     signal.signal(signal.SIGINT, handle_sigint)
-    new_ue_string = "PAA, Ipv4 Address:"
+    new_context = "SMF CONTEXT:"
+    get_imsi = "SUPI:"
     dn_ip_address = '192.168.70.135'
+    status_file = '/tmp/auto-test-status.txt'
+    server_jobs = []
 
     while True:
         # Read the new logs from the subprocess output
         new_logs = dockerScanPocess.stdout.readline().decode("utf-8")
 
         if new_logs:
-            if new_ue_string in new_logs:
-                search_index = new_logs.index(new_ue_string)
+            # Set status
+            with open(status_file, 'w') as file:
+                file.write("ACTIVE\n")
+
+            if new_context in new_logs:
+                # Read next line
+                new_logs = dockerScanPocess.stdout.readline().decode("utf-8")
+                search_index = new_logs.index(get_imsi)
 
                 # Extract the substring after the search string
-                ip_address = new_logs[search_index + len(new_ue_string):].strip()
+                imsi = new_logs[search_index + len(get_imsi):].strip()
                 print("Found new UE")
-                print(ip_address)
-                start_core_iperf(dn_ip_address, ip_address, iperf_time)
+                print(imsi)
+                srvJ = start_core_iperf(imsi)
+                server_jobs.append(srvJ)
             else:
                 continue
         else:
@@ -150,11 +150,13 @@ def scan_docker_logs_and_do_stuff(service_name, iperf_time):
             break
 
     dockerScanPocess.terminate()
+    for j in server_jobs:
+        j.terminate()
 
-def run_core_test(iperf_time):
+def run_core_test():
     current_directory = os.getcwd()
     docker_image_to_scan = 'oai-smf'
-    scan_docker_logs_and_do_stuff(docker_image_to_scan, iperf_time)
+    scan_docker_logs_and_do_stuff(docker_image_to_scan)
 
 def run_UE_test(args):
     current_directory = '/root'
@@ -163,12 +165,13 @@ def run_UE_test(args):
     ue = UE(args)
     ue.execute = False
     ue.run()
-    conn_established, ueThread = run_and_check_conn_established(ue.cmd_stored)
+    print(ue.cmd_stored)
+    conn_established, ueProcess = run_and_check_conn_established(ue.cmd_stored)
 
     if conn_established:
         interface_prefix = 'oaitun'
         ip_address = get_interface_ip(interface_prefix)
-        dn_ip_address = '192.168.70.135'
+        dn_ip_address = '192.168.70.129'
         if ip_address:
             print(f"The IP address of interface {interface_prefix} is: {ip_address}")
             # default route
@@ -180,28 +183,36 @@ def run_UE_test(args):
                 print(f"Error adding default route: {e}")
             except Exception as e:
                 print(f"An unexpected error occurred: {e}")
-            # iperf 
-            print("Starting iperf server job")
-            iperfSrvCmd = f'iperf -u -s -i 1 -B {ip_address} -t {args.iperf_time} > {current_directory}/iperf-UE-server.log'
-            iperfSrvThd = CommandThread(iperfSrvCmd, current_directory)
-            iperfSrvThd.start()
 
-            print("Starting iperf client job")
-            iperfClntCmd = f'iperf -u -i 1 -B {ip_address} -b 3M -c {dn_ip_address} -t {args.iperf_time} > {current_directory}/iperf-UE-client.log'
-            iperfClntThd = CommandThread(iperfClntCmd, current_directory)
-            iperfClntThd.start()
+            # DL iperf
+            print("Starting DL iperf job")
+            output_filename = f'{current_directory}/iperf-ue-DL.log'
+            output_file = open(output_filename, "w")
+            iperfDLcmd = f'iperf3 -u --bind {ip_address} -b {args.dl_iperf_rate}M -c {dn_ip_address} -t {args.iperf_time} -p 52{ue.node_id[1:]} -R'.split()
+            try:
+                iperfDL = subprocess.Popen(iperfDLcmd, stdout=output_file, stderr=subprocess.STDOUT)
+            except Exception as e:
+                print("Error starting DL iperf job")
+            iperfDL.wait()
+            print("Finished iperf DL job")
+            # UL iperf
+            print("Starting UL client job")
+            output_filename = f'{current_directory}/iperf-ue-UL.log'
+            output_file = open(output_filename, "w")
+            iperfULcmd = f'iperf3 -u --bind {ip_address} -b {args.ul_iperf_rate}M -c {dn_ip_address} -t {args.iperf_time} -p 52{ue.node_id[1:]}'.split()
+            try:
+                iperfUL = subprocess.Popen(iperfULcmd, stdout=output_file, stderr=subprocess.STDOUT)
+            except Exception as e:
+                print("Error starting UL iperf job")
+            iperfUL.wait()
+            print("Finished iperf UL job")
         else:
             print(f"No interface found with the prefix {interface_prefix}")
     else:
         stop_and_kill_ue(ueThread)
 
-    # Wait for iperf commands to finish
-    iperfSrvThd.join()
-    print("Finished iperf server job")
-    iperfClntThd.join()
-    print("Finished iperf client job")
     # Issue kill signal to the UE
-    stop_and_kill_ue(ueThread)
+    stop_and_kill_subp(ueProcess)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Parameters to run tests')
@@ -210,6 +221,12 @@ if __name__ == '__main__':
                         choices=['ue', 'core-nw'])
     parser.add_argument('-t', '--iperf_time',
                         default=10,
+                        type=int)
+    parser.add_argument('-D', '--dl_iperf_rate',
+                        default=10,
+                        type=int)
+    parser.add_argument('-U', '--ul_iperf_rate',
+                        default=5,
                         type=int)
     parser.add_argument('-n', '--numerology',
                         default=1,
@@ -235,6 +252,6 @@ if __name__ == '__main__':
     if args.mode == 'ue':
         run_UE_test(args)
     elif args.mode == 'core-nw':
-        run_core_test(args.iperf_time)
+        run_core_test()
     else:
         print("Unknown mode")
