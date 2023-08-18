@@ -68,6 +68,7 @@ def run_and_check_conn_established(command_to_run):
     current_directory = os.getcwd()
     output_filename = '/root/last_log'
     output_file = open(output_filename, "w")
+    status_file = '/tmp/NR_STATE'
 
     # Create a separate thread and run the UE in it
     ueProcess = subprocess.Popen(command_to_run, stdout=output_file, stderr=subprocess.STDOUT)
@@ -80,6 +81,8 @@ def run_and_check_conn_established(command_to_run):
 
     target_string = r'SIB1 decoded'
     sib1_decoded = tail(output_filename, target_string, 100)
+    # Set status
+    os.system(f'echo "ACTIVE" > {status_file}')
 
     target_string = r'Interface .* successfully configured, ip address'
     conn_established = tail(output_filename, target_string, 10)
@@ -116,7 +119,7 @@ def scan_docker_logs_and_do_stuff(service_name):
     new_context = "SMF CONTEXT:"
     get_imsi = "SUPI:"
     dn_ip_address = '192.168.70.135'
-    status_file = '/tmp/auto-test-status.txt'
+    status_file = '/tmp/NR_STATE'
     server_jobs = []
 
     while True:
@@ -124,10 +127,6 @@ def scan_docker_logs_and_do_stuff(service_name):
         new_logs = dockerScanPocess.stdout.readline().decode("utf-8")
 
         if new_logs:
-            # Set status
-            with open(status_file, 'w') as file:
-                file.write("ACTIVE\n")
-
             if new_context in new_logs:
                 # Read next line
                 new_logs = dockerScanPocess.stdout.readline().decode("utf-8")
@@ -137,6 +136,8 @@ def scan_docker_logs_and_do_stuff(service_name):
                 imsi = new_logs[search_index + len(get_imsi):].strip()
                 print("Found new UE")
                 print(imsi)
+                # Set status
+                os.system(f'echo "ACTIVE" > {status_file}')
                 srvJ = start_core_iperf(imsi)
                 server_jobs.append(srvJ)
             else:

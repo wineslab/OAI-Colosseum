@@ -4,6 +4,8 @@
 # STDOUT and STDERR may be logged, but the exit status is always checked.
 # The script should return 0 to signify successful execution.
 
+echo "STOPPING" > /tmp/NR_STATE
+
 SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
 
 source ${SCRIPT_DIR}/common.sh
@@ -16,14 +18,19 @@ cp ${SCRIPT_DIR}/colosseum_config.ini /logs/
 
 echo "[`date`] Copying logs" >> /logs/run.log
 if [ "$mode_type" == "ue" ]; then
+  pids=$(pidof -x "auto-test.py")
+  kill -9 $pids
   cp /root/iperf-ue-DL.log /logs/
   cp /root/iperf-ue-UL.log /logs/
   cp /root/last_log /logs/nr-ue.log
 elif [ "$mode_type" == "gnb" ]; then
+  pids=$(pidof -x "ran.py")
+  kill -9 $pids
   cp /root/last_log /logs/nr-gnb.log
 elif [ "$mode_type" == "core" ]; then
+  pids=$(pidof -x "auto-test.py")
+  kill -9 $pids
   cp /root/iperf-core-server-ue-* /logs/
-  cd /root/oai-cn5g
   docker logs oai-amf > /logs/amf.log
   docker logs oai-smf > /logs/smf.log
 else
@@ -31,5 +38,6 @@ else
   exit 1
 fi
 
+echo "FINISHED" > /tmp/NR_STATE
 
 exit 0
