@@ -33,7 +33,7 @@ done < "$config_file"
 
 script_cmd=""
 if [ "$mode_type" == "gnb" ]; then
-    script_cmd="ran.py -t donor -m sa"
+    script_cmd="auto-test.py -m gnb"
 elif [ "$mode_type" == "ue" ]; then
     script_cmd="auto-test.py -m ue -t ${iperf_duration} -D ${dl_iperf_rate} -U ${ul_iperf_rate}"
 elif [ "$mode_type" == "core" ]; then

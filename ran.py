@@ -85,61 +85,61 @@ class Ran:
         if f1_type == 'du' or f1_type == 'donor':
             macrlcs = 'MACRLCs = \(\{ \}\)\;'
             os.system(f"echo {macrlcs} >> {self.config_file}")
-            args += ['--MACRLCs.[0].num_cc 1',
-                     '--MACRLCs.[0].tr_s_preference "local_L1"',
-                     '--MACRLCs.[0].pusch_TargetSNRx10 150',
-                     '--MACRLCs.[0].pucch_TargetSNRx10 200',
-                     '--MACRLCs.[0].ul_prbblack_SNR_threshold 10',
-                     '--MACRLCs.[0].ulsch_max_frame_inactivity 0',
-                     '--MACRLCs.[0].ul_max_mcs 28']
+            args += ['--MACRLCs.[0].num_cc', '1',
+                     '--MACRLCs.[0].tr_s_preference', 'local_L1',
+                     '--MACRLCs.[0].pusch_TargetSNRx10', '150',
+                     '--MACRLCs.[0].pucch_TargetSNRx10', '200',
+                     '--MACRLCs.[0].ul_prbblack_SNR_threshold', '10',
+                     '--MACRLCs.[0].ulsch_max_frame_inactivity', '0',
+                     '--MACRLCs.[0].ul_max_mcs', '28']
             if f1_type == 'du':
-                args += ['--MACRLCs.[0].tr_n_preference "f1"',
-                         '--MACRLCs.[0].local_n_if_name "col0"',
-                         f'--MACRLCs.[0].local_n_address "{self.main_ip}"',
-                         f'--MACRLCs.[0].remote_n_address "{self.f1_remote_node}"',
-                         '--MACRLCs.[0].local_n_portc 500',
-                         '--MACRLCs.[0].local_n_portd 2252',
-                         '--MACRLCs.[0].remote_n_portc 501',
-                         '--MACRLCs.[0].remote_n_portd 2252']
+                args += ['--MACRLCs.[0].tr_n_preference', 'f1',
+                         '--MACRLCs.[0].local_n_if_name', 'col0',
+                         '--MACRLCs.[0].local_n_address', f'{self.main_ip}',
+                         '--MACRLCs.[0].remote_n_address', f'{self.f1_remote_node}',
+                         '--MACRLCs.[0].local_n_portc', '500',
+                         '--MACRLCs.[0].local_n_portd', '2252',
+                         '--MACRLCs.[0].remote_n_portc', '501',
+                         '--MACRLCs.[0].remote_n_portd', '2252']
             elif f1_type == 'donor':
-                args += ['--MACRLCs.[0].tr_n_preference "local_RRC"']
+                args += ['--MACRLCs.[0].tr_n_preference', 'local_RRC']
             l1s = 'L1s = \(\{ \}\)\;'
             os.system(f"echo {l1s} >> {self.config_file}")
-            args += ['--L1s.[0].num_cc 1',
-                     '--L1s.[0].tr_n_preference "local_mac"',
-                     '--L1s.[0].pusch_proc_threads 32',
-                     '--L1s.[0].prach_dtx_threshold 120',
-                     '--L1s.[0].pucch0_dtx_threshold 150',
-                     '--L1s.[0].ofdm_offset_divisor 8']
+            args += ['--L1s.[0].num_cc', '1',
+                     '--L1s.[0].tr_n_preference', f'local_mac',
+                     '--L1s.[0].pusch_proc_threads', '32',
+                     '--L1s.[0].prach_dtx_threshold', '120',
+                     '--L1s.[0].pucch0_dtx_threshold', '150',
+                     '--L1s.[0].ofdm_offset_divisor', '8']
             rus = 'RUs = \(\{ \}\)\;'
             os.system(f"echo {rus} >> {self.config_file}")
-            args += ['--RUs.[0].local_rf "yes"',
-                     '--RUs.[0].nb_tx 1',
-                     '--RUs.[0].nb_rx 1',
-                     '--RUs.[0].att_tx 0',
-                     '--RUs.[0].att_rx 0',
-                     '--RUs.[0].bands [78]',
-                     '--RUs.[0].max_pdschReferenceSignalPower -27',
-                     '--RUs.[0].max_rxgain 114',
-                     '--RUs.[0].eNB_instances [0]',
-                     '--RUs.[0].bf_weights [0x00007fff, 0x0000, 0x0000, 0x0000]',
-                     '--RUs.[0].clock_src "external"',
-                     '--RUs.[0].time_src "external"',
-                     f'--RUs.[0].sdr_addrs "addr={USRP_ADDR}"',
-                     f'--RUs.[0].if_freq {self.if_freq}']
+            args += ['--RUs.[0].local_rf', 'yes',
+                     '--RUs.[0].nb_tx', '1',
+                     '--RUs.[0].nb_rx', '1',
+                     '--RUs.[0].att_tx', '0',
+                     '--RUs.[0].att_rx', '0',
+                     '--RUs.[0].bands', '[78]',
+                     '--RUs.[0].max_pdschReferenceSignalPower', '-27',
+                     '--RUs.[0].max_rxgain', '114',
+                     '--RUs.[0].eNB_instances', '[0]',
+                     '--RUs.[0].bf_weights', '[0x00007fff, 0x0000, 0x0000, 0x0000]',
+                     '--RUs.[0].clock_src', 'external',
+                     '--RUs.[0].time_src', 'external',
+                     '--RUs.[0].sdr_addrs', f'addr={USRP_ADDR}',
+                     '--RUs.[0].if_freq', f'{self.if_freq}']
             tss = 'THREAD_STRUCT = \(\{ \}\)\;'
             os.system(f"echo {tss} >> {self.config_file}")
-            args += ['--THREAD_STRUCT.[0].parallel_config "PARALLEL_SINGLE_THREAD"',
-                     '--THREAD_STRUCT.[0].worker_config "WORKER_ENABLE"']
+            args += ['--THREAD_STRUCT.[0].parallel_config', 'PARALLEL_SINGLE_THREAD',
+                     '--THREAD_STRUCT.[0].worker_config', 'WORKER_ENABLE']
         elif f1_type == 'cu':
-            args += ['--gNBs.[0].tr_s_preference "f1"',
-                     '--gNBs.[0].local_s_if_name "col0"',
-                     f'--gNBs.[0].local_s_address "{self.main_ip}"',
-                     f'--gNBs.[0].remote_s_address "{self.f1_remote_node}"',
-                     f'--gNBs.[0].local_s_portc 501',
-                     '--gNBs.[0].local_s_portd 2252',
-                     '--gNBs.[0].remote_s_portc 500',
-                     '--gNBs.[0].remote_s_portd 2252']
+            args += ['--gNBs.[0].tr_s_preference', 'f1',
+                     '--gNBs.[0].local_s_if_name', 'col0',
+                     '--gNBs.[0].local_s_address', f'{self.main_ip}',
+                     '--gNBs.[0].remote_s_address', f'{self.f1_remote_node}',
+                     '--gNBs.[0].local_s_portc', '501',
+                     '--gNBs.[0].local_s_portd', '2252',
+                     '--gNBs.[0].remote_s_portc', '500',
+                     '--gNBs.[0].remote_s_portd', '2252']
         return args
 
     def set_params(self, arfcn):
@@ -188,14 +188,14 @@ class Ran:
         LABW = get_locationandbandwidth(self.prb)
         pre_path = ""
         if self.args.numa > 0:
-            pre_path = f"numactl --cpunodebind=netdev:{USRP_DEV} --membind=netdev:{USRP_DEV} "
+            pre_path = ['numactl', f'--cpunodebind=netdev:{USRP_DEV}', f'--membind=netdev:{USRP_DEV}']
         if self.args.gdb > 0:
             # gdb override numa
-            pre_path = f'gdb --args '
-        executable = f"{OAI_PATH}/cmake_targets/ran_build/build/nr-softmodem "
-        oai_args = [f"-O {self.config_file}", "--usrp-tx-thread-config 1"]
+            pre_path = ['gdb', '--args']
+        executable = [f'{OAI_PATH}cmake_targets/ran_build/build/nr-softmodem']
+        oai_args = ['-O', f'{self.config_file}', '--usrp-tx-thread-config', '1']
         if self.prb >= 106 and self.numerology == 1:
-            oai_args.append("-E")
+            oai_args.append('-E')
         if self.args.rfsim > 0:
             oai_args += ['--rfsim']
         oai_args += [f'--{self.mode}']
@@ -203,32 +203,33 @@ class Ran:
             oai_args += [f'{self.phytest}']
         if self.args.scope:
             oai_args += ['-d']
-        oai_args += [f'--continuous-tx']
-        oai_args += ["--thread-pool '-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1'"]
+        oai_args += ['--continuous-tx']
+        oai_args += ['--thread-pool', '-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1']
         # Set cell name and id
-        oai_args += [f'--Active_gNBs "IAB-{self.node_id}"',
-                     f'--gNBs.[0].gNB_ID {self.node_id}',
-                     f'--gNBs.[0].gNB_name "IAB-{self.node_id}"']
+        oai_args += ['--Active_gNBs', f'IAB-{self.node_id}',
+                     '--gNBs.[0].gNB_ID', f'{self.node_id}',
+                     '--gNBs.[0].gNB_name', f'IAB-{self.node_id}']
         # Set frequency, prb and BWP Location
-        oai_args += [f'--gNBs.[0].servingCellConfigCommon.[0].absoluteFrequencySSB {self.arfcn}',
-                     f'--gNBs.[0].servingCellConfigCommon.[0].dl_absoluteFrequencyPointA {self.pointa}',
-                     f'--gNBs.[0].servingCellConfigCommon.[0].dl_carrierBandwidth {self.prb}',
-                     f'--gNBs.[0].servingCellConfigCommon.[0].ul_carrierBandwidth {self.prb}',
-                     f'--gNBs.[0].servingCellConfigCommon.[0].initialDLBWPlocationAndBandwidth {LABW}',
-                     f'--gNBs.[0].servingCellConfigCommon.[0].initialULBWPlocationAndBandwidth {LABW}']
+        oai_args += ['--gNBs.[0].servingCellConfigCommon.[0].absoluteFrequencySSB', f'{self.arfcn}',
+                     '--gNBs.[0].servingCellConfigCommon.[0].dl_absoluteFrequencyPointA', f'{self.pointa}',
+                     '--gNBs.[0].servingCellConfigCommon.[0].dl_carrierBandwidth', f'{self.prb}',
+                     '--gNBs.[0].servingCellConfigCommon.[0].ul_carrierBandwidth', f'{self.prb}',
+                     '--gNBs.[0].servingCellConfigCommon.[0].initialDLBWPlocationAndBandwidth', f'{LABW}',
+                     '--gNBs.[0].servingCellConfigCommon.[0].initialULBWPlocationAndBandwidth', f'{LABW}']
         # Set AMF parameters
         # BUG: this cli command is not working, wait for answer from OAI
-        oai_args += [f'--gNBs.[0].amf_ip_address.[0].ipv4 {AMF_IP}',
-                     f'--gNBs.[0].NETWORK_INTERFACES.GNB_INTERFACE_NAME_FOR_NG_AMF {local_dev}',
-                     f'--gNBs.[0].NETWORK_INTERFACES.GNB_INTERFACE_NAME_FOR_NGU {local_dev}',
-                     f'--gNBs.[0].NETWORK_INTERFACES.GNB_IPV4_ADDRESS_FOR_NG_AMF {local_ip}',
-                     f'--gNBs.[0].NETWORK_INTERFACES.GNB_IPV4_ADDRESS_FOR_FOR_NGU {local_ip}']
+        oai_args += ['--gNBs.[0].amf_ip_address.[0].ipv4', f'{AMF_IP}',
+                     '--gNBs.[0].NETWORK_INTERFACES.GNB_INTERFACE_NAME_FOR_NG_AMF', f'{local_dev}',
+                     '--gNBs.[0].NETWORK_INTERFACES.GNB_INTERFACE_NAME_FOR_NGU', f'{local_dev}',
+                     '--gNBs.[0].NETWORK_INTERFACES.GNB_IPV4_ADDRESS_FOR_NG_AMF', f'{local_ip}',
+                     '--gNBs.[0].NETWORK_INTERFACES.GNB_IPV4_ADDRESS_FOR_FOR_NGU', f'{local_ip}']
 
         # Set F1 parameters
         oai_args += f1_cmd_args
-        # Add option to increase the UE stability
-        #os.system(f"""{pre_path} {executable} {' '.join(oai_args)}  2>&1 | tee ~/mylogs/gNB-$(date +"%m%d%H%M").log | tee ~/last_log""")
-        os.system(f"""{pre_path} {executable} {' '.join(oai_args)}""")
+        self.cmd_stored = pre_path + executable + oai_args
+        if self.execute:
+            command_to_run = f"""{' '.join(self.cmd_stored)}  2>&1 | tee ~/mylogs/gNB-$(date +"%m%d%H%M").log | tee ~/last_log"""
+            os.system(command_to_run)
 
     def run_ue(self):
         main_exe = [f'{OAI_PATH}cmake_targets/ran_build/build/nr-uesoftmodem']

@@ -6,7 +6,7 @@ import sys
 import netifaces
 import os
 import argparse
-from ran import Ran as UE
+from ran import Ran
 
 def handle_sigint(sig, frame):
     print("Stopping the process...")
@@ -65,7 +65,6 @@ def stop_and_kill_subp(process):
     process.wait()
 
 def run_and_check_conn_established(command_to_run):
-    current_directory = os.getcwd()
     output_filename = '/root/last_log'
     output_file = open(output_filename, "w")
     status_file = '/tmp/NR_STATE'
@@ -155,7 +154,6 @@ def scan_docker_logs_and_do_stuff(service_name):
         j.terminate()
 
 def run_core_test():
-    current_directory = os.getcwd()
     docker_image_to_scan = 'oai-smf'
     scan_docker_logs_and_do_stuff(docker_image_to_scan)
 
@@ -163,7 +161,7 @@ def run_UE_test(args):
     current_directory = '/root'
     args.mode = 'sa'
     args.type = 'ue'
-    ue = UE(args)
+    ue = Ran(args)
     ue.execute = False
     ue.run()
     print(ue.cmd_stored)
@@ -215,11 +213,26 @@ def run_UE_test(args):
     # Issue kill signal to the UE
     stop_and_kill_subp(ueProcess)
 
+def run_gnb_test(args):
+    args.mode = 'sa'
+    args.type = 'donor'
+    gnb = Ran(args)
+    gnb.execute = False
+    gnb.run()
+    print(gnb.cmd_stored)
+    output_file = open('/root/last_log', "w")
+    p = subprocess.Popen(gnb.cmd_stored, stdout=output_file, stderr=subprocess.STDOUT)
+    while True:
+        if p.poll() is not None:
+            print("gNB process ended. Restarting it.")
+            p = subprocess.Popen(gnb.cmd_stored, stdout=output_file, stderr=subprocess.STDOUT)
+        time.sleep(5)
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Parameters to run tests')
     parser.add_argument('-m', '--mode',
                         required=True,
-                        choices=['ue', 'core-nw'])
+                        choices=['gnb', 'ue', 'core-nw'])
     parser.add_argument('-t', '--iperf_time',
                         default=10,
                         type=int)
@@ -250,6 +263,8 @@ if __name__ == '__main__':
     args.rfsim = False
     args.scope = False
 
+    if args.mode == 'gnb':
+        run_gnb_test(args)
     if args.mode == 'ue':
         run_UE_test(args)
     elif args.mode == 'core-nw':

@@ -18,18 +18,15 @@ cp ${SCRIPT_DIR}/colosseum_config.ini /logs/
 
 echo "[`date`] Copying logs" >> /logs/run.log
 if [ "$mode_type" == "ue" ]; then
-  pids=$(pidof -x "auto-test.py")
-  kill -9 $pids
+  systemctl stop oai_ran.service
   cp /root/iperf-ue-DL.log /logs/
   cp /root/iperf-ue-UL.log /logs/
   cp /root/last_log /logs/nr-ue.log
 elif [ "$mode_type" == "gnb" ]; then
-  pids=$(pidof -x "ran.py")
-  kill -9 $pids
+  systemctl stop oai_ran.service
   cp /root/last_log /logs/nr-gnb.log
 elif [ "$mode_type" == "core" ]; then
-  pids=$(pidof -x "auto-test.py")
-  kill -9 $pids
+  systemctl stop oai_5gc.service
   cp /root/iperf-core-server-ue-* /logs/
   docker logs oai-amf > /logs/amf.log
   docker logs oai-smf > /logs/smf.log
