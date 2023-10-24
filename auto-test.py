@@ -187,7 +187,8 @@ def run_UE_test(args):
             print("Starting DL iperf job")
             output_filename = f'{current_directory}/iperf-ue-DL.log'
             output_file = open(output_filename, "w")
-            iperfDLcmd = f'iperf3 -u --bind {ip_address} -b {args.dl_iperf_rate}M -c {dn_ip_address} -t {args.iperf_time} -p 52{ue.node_id[1:]} -R'.split()
+            #iperfDLcmd = f'iperf3 -u --bind {ip_address} -b {args.dl_iperf_rate}M -c {dn_ip_address} -t {args.iperf_time} -p 52{ue.node_id[1:]} -R'.split()
+            iperfDLcmd = f'python3 /root/sierra-wireless-automated-testing/src/iperf/iperf_run.py --type tcp --dir DL --save local --port 52{ue.node_id[1:]} --bind {ip_address}'.split()
             try:
                 iperfDL = subprocess.Popen(iperfDLcmd, stdout=output_file, stderr=subprocess.STDOUT)
             except Exception as e:
@@ -198,7 +199,8 @@ def run_UE_test(args):
             print("Starting UL client job")
             output_filename = f'{current_directory}/iperf-ue-UL.log'
             output_file = open(output_filename, "w")
-            iperfULcmd = f'iperf3 -u --bind {ip_address} -b {args.ul_iperf_rate}M -c {dn_ip_address} -t {args.iperf_time} -p 52{ue.node_id[1:]}'.split()
+            #iperfULcmd = f'iperf3 -u --bind {ip_address} -b {args.ul_iperf_rate}M -c {dn_ip_address} -t {args.iperf_time} -p 52{ue.node_id[1:]}'.split()
+            iperfULcmd = f'python3 /root/sierra-wireless-automated-testing/src/iperf/iperf_run.py --type tcp --dir UL --save local --port 52{ue.node_id[1:]} --bind {ip_address}'.split()
             try:
                 iperfUL = subprocess.Popen(iperfULcmd, stdout=output_file, stderr=subprocess.STDOUT)
             except Exception as e:
