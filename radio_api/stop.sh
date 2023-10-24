@@ -21,6 +21,7 @@ if [ "$mode_type" == "ue" ]; then
   systemctl stop oai_ran.service
   cp /root/iperf-ue-DL.log /logs/
   cp /root/iperf-ue-UL.log /logs/
+  cp /root/OAI-Colosseum/iperf3_result* /logs/
   cp /root/last_log /logs/nr-ue.log
 elif [ "$mode_type" == "gnb" ]; then
   systemctl stop oai_ran.service
