@@ -36,6 +36,9 @@ else
   exit 1
 fi
 
+# copy journalctl to /logs/
+journalctl --since="1 hours ago" > /logs/journalctl.log
+
 echo "FINISHED" > /tmp/NR_STATE
 
 exit 0
