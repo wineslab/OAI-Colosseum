@@ -227,6 +227,9 @@ def run_and_find_A(command_to_run, args):
               print(f"RAR Succeeded {pass_count} consecutive runs with A = {A}.")
               break
 
+      if A >= args.stop_A:
+          print("Reached max A. End program.")
+          break
       # Remove A from command line
       remove_cmd_line_option(command_to_run, '-A')
 
@@ -316,7 +319,10 @@ if __name__ == '__main__':
                         default=False,
                         action='store_true')
     parser.add_argument('--start_A',
-                        default=2000,
+                        default=0,
+                        type=int)
+    parser.add_argument('--stop_A',
+                        default=4000,
                         type=int)
     parser.add_argument('-t', '--iperf_time',
                         default=10,
