@@ -12,6 +12,22 @@ def handle_sigint(sig, frame):
     print("Stopping the process...")
     sys.exit(0)
 
+def tail_count(file_path, target_string):
+    # Start at the end of the file
+    count = 0
+    with open(file_path, 'r') as file:
+        file.seek(0)  # Go to the beginning of the file
+
+        # Read new lines if available
+        new_lines = file.readlines()
+        if new_lines:
+            # Process the new lines
+            for line in new_lines:
+                if re.search(target_string, line):
+                    count += 1
+
+    return count
+
 def tail(file_path, target_string, max_num_search):
     # Start at the end of the file
     with open(file_path, 'r') as file:
@@ -157,6 +173,63 @@ def run_core_test():
     docker_image_to_scan = 'oai-smf'
     scan_docker_logs_and_do_stuff(docker_image_to_scan)
 
+def remove_cmd_line_option(command, option):
+    try:
+        index = command.index(option)
+        command.pop(index) # remove option
+        command.pop(index) # remove value
+    except ValueError:
+        print(f"Option {option} not found in command line")
+
+def run_and_find_A(command_to_run, args):
+    # Remove A from command line
+    remove_cmd_line_option(command_to_run, '-A')
+
+    max_fail_RAR_count = 10
+    min_fail_RAR_count = 3
+    A = args.start_A
+    max_pass_count = 5
+    pass_count = 0
+    while True:
+      output_filename = '/root/last_log'
+      output_file = open(output_filename, "w")
+
+      command_to_run.extend(['-A', f'{A}'])
+      # Create a separate thread and run the UE in it
+      ueProcess = subprocess.Popen(command_to_run, stdout=output_file, stderr=subprocess.STDOUT)
+
+      time.sleep(5)
+
+      # Perform scanning of logs and run iperf
+      target_string = r'Starting sync detection'
+      init_sync_started = tail(output_filename, target_string, 100)
+
+      target_string = r'SIB1 decoded'
+      sib1_decoded = tail(output_filename, target_string, 100)
+
+      time.sleep(5)
+
+      target_string = r'doesn\'t match the intended RAPID'
+      fail_RAR_count = tail_count(output_filename, target_string)
+
+      output_file.close()
+      stop_and_kill_subp(ueProcess);
+      time.sleep(5)
+
+      if fail_RAR_count > min_fail_RAR_count:
+          A += 3
+          pass_count = 0
+          print(f"RAR fail count: {fail_RAR_count}. Trying again with A: {A}.")
+      else:
+          pass_count += 1
+          print(f"RAR succeeded. Current success count: {pass_count}.")
+          if pass_count >= max_pass_count:
+              print(f"RAR Succeeded {pass_count} consecutive runs with A = {A}.")
+              break
+
+      # Remove A from command line
+      remove_cmd_line_option(command_to_run, '-A')
+
 def run_UE_test(args):
     current_directory = '/root'
     args.mode = 'sa'
@@ -165,52 +238,56 @@ def run_UE_test(args):
     ue.execute = False
     ue.run()
     print(ue.cmd_stored)
-    conn_established, ueProcess = run_and_check_conn_established(ue.cmd_stored)
-
-    if conn_established:
-        interface_prefix = 'oaitun'
-        ip_address = get_interface_ip(interface_prefix)
-        dn_ip_address = '192.168.70.129'
-        if ip_address:
-            print(f"The IP address of interface {interface_prefix} is: {ip_address}")
-            # default route
-            add_route_cmd = "route add default gw 12.1.1.1"
-            try:
-                subprocess.run(add_route_cmd, shell=True, check=True)
-                print("Default route added successfully.")
-            except subprocess.CalledProcessError as e:
-                print(f"Error adding default route: {e}")
-            except Exception as e:
-                print(f"An unexpected error occurred: {e}")
-
-            # DL iperf
-            print("Starting DL iperf job")
-            output_filename = f'{current_directory}/iperf-ue-DL.log'
-            output_file = open(output_filename, "w")
-            #iperfDLcmd = f'iperf3 -u --bind {ip_address} -b {args.dl_iperf_rate}M -c {dn_ip_address} -t {args.iperf_time} -p 52{ue.node_id[1:]} -R'.split()
-            iperfDLcmd = f'python3 /root/sierra-wireless-automated-testing/src/iperf/iperf_run.py --type tcp --dir DL --save local --port 52{ue.node_id[1:]} --bind {ip_address}'.split()
-            try:
-                iperfDL = subprocess.Popen(iperfDLcmd, stdout=output_file, stderr=subprocess.STDOUT)
-            except Exception as e:
-                print("Error starting DL iperf job")
-            iperfDL.wait()
-            print("Finished iperf DL job")
-            # UL iperf
-            print("Starting UL client job")
-            output_filename = f'{current_directory}/iperf-ue-UL.log'
-            output_file = open(output_filename, "w")
-            #iperfULcmd = f'iperf3 -u --bind {ip_address} -b {args.ul_iperf_rate}M -c {dn_ip_address} -t {args.iperf_time} -p 52{ue.node_id[1:]}'.split()
-            iperfULcmd = f'python3 /root/sierra-wireless-automated-testing/src/iperf/iperf_run.py --type tcp --dir UL --save local --port 52{ue.node_id[1:]} --bind {ip_address}'.split()
-            try:
-                iperfUL = subprocess.Popen(iperfULcmd, stdout=output_file, stderr=subprocess.STDOUT)
-            except Exception as e:
-                print("Error starting UL iperf job")
-            iperfUL.wait()
-            print("Finished iperf UL job")
-        else:
-            print(f"No interface found with the prefix {interface_prefix}")
+    conn_established = False
+    if args.ue_find_A:
+        A = run_and_find_A(ue.cmd_stored, args)
+        print(f"Found A = {A} to be stable. Try it manually now.")
     else:
-        stop_and_kill_ue(ueThread)
+        conn_established, ueProcess = run_and_check_conn_established(ue.cmd_stored)
+        if conn_established:
+            interface_prefix = 'oaitun'
+            ip_address = get_interface_ip(interface_prefix)
+            dn_ip_address = '192.168.70.129'
+            if ip_address:
+                print(f"The IP address of interface {interface_prefix} is: {ip_address}")
+                # default route
+                add_route_cmd = "route add default gw 12.1.1.1"
+                try:
+                    subprocess.run(add_route_cmd, shell=True, check=True)
+                    print("Default route added successfully.")
+                except subprocess.CalledProcessError as e:
+                    print(f"Error adding default route: {e}")
+                except Exception as e:
+                    print(f"An unexpected error occurred: {e}")
+
+                # DL iperf
+                print("Starting DL iperf job")
+                output_filename = f'{current_directory}/iperf-ue-DL.log'
+                output_file = open(output_filename, "w")
+                #iperfDLcmd = f'iperf3 -u --bind {ip_address} -b {args.dl_iperf_rate}M -c {dn_ip_address} -t {args.iperf_time} -p 52{ue.node_id[1:]} -R'.split()
+                iperfDLcmd = f'python3 /root/sierra-wireless-automated-testing/src/iperf/iperf_run.py --type tcp --dir DL --save local --port 52{ue.node_id[1:]} --bind {ip_address}'.split()
+                try:
+                    iperfDL = subprocess.Popen(iperfDLcmd, stdout=output_file, stderr=subprocess.STDOUT)
+                except Exception as e:
+                    print("Error starting DL iperf job")
+                iperfDL.wait()
+                print("Finished iperf DL job")
+                # UL iperf
+                print("Starting UL client job")
+                output_filename = f'{current_directory}/iperf-ue-UL.log'
+                output_file = open(output_filename, "w")
+                #iperfULcmd = f'iperf3 -u --bind {ip_address} -b {args.ul_iperf_rate}M -c {dn_ip_address} -t {args.iperf_time} -p 52{ue.node_id[1:]}'.split()
+                iperfULcmd = f'python3 /root/sierra-wireless-automated-testing/src/iperf/iperf_run.py --type tcp --dir UL --save local --port 52{ue.node_id[1:]} --bind {ip_address}'.split()
+                try:
+                    iperfUL = subprocess.Popen(iperfULcmd, stdout=output_file, stderr=subprocess.STDOUT)
+                except Exception as e:
+                    print("Error starting UL iperf job")
+                iperfUL.wait()
+                print("Finished iperf UL job")
+            else:
+                print(f"No interface found with the prefix {interface_prefix}")
+        else:
+            stop_and_kill_ue(ueThread)
 
     # Issue kill signal to the UE
     stop_and_kill_subp(ueProcess)
@@ -232,9 +309,15 @@ def run_gnb_test(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Parameters to run tests')
-    parser.add_argument('-m', '--mode',
+    parser.add_argument('-T', '--type',
                         required=True,
                         choices=['gnb', 'ue', 'core-nw'])
+    parser.add_argument('--ue_find_A',
+                        default=False,
+                        action='store_true')
+    parser.add_argument('--start_A',
+                        default=2000,
+                        type=int)
     parser.add_argument('-t', '--iperf_time',
                         default=10,
                         type=int)
@@ -255,6 +338,7 @@ if __name__ == '__main__':
     parser.add_argument('-c', '--channel',
                         default=0,
                         type=int)
+    parser.add_argument('--tqsample', default=False, action='store_true')
     parser.add_argument('--flash', '-f', default=False, action='store_true')
     args = parser.parse_args()
     args.f1_remote_node = '0.0.0.0'
@@ -265,11 +349,11 @@ if __name__ == '__main__':
     args.rfsim = False
     args.scope = False
 
-    if args.mode == 'gnb':
+    if args.type == 'gnb':
         run_gnb_test(args)
-    if args.mode == 'ue':
+    elif args.type == 'ue':
         run_UE_test(args)
-    elif args.mode == 'core-nw':
+    elif args.type == 'core-nw':
         run_core_test()
     else:
-        print("Unknown mode")
+        print("Unknown node type")

@@ -263,7 +263,7 @@ class Ran:
             args += ['--rfsim']
         else:
             executable = main_exe
-        if self.prb >= 106 and self.numerology == 1:
+        if self.prb >= 106 and self.numerology == 1 and self.args.tqsample:
             # USRP X3*0 needs to lower the sample rate to 3/4
             args += ['-E']
         if self.args.scope:
@@ -309,6 +309,7 @@ if __name__ == '__main__':
     parser.add_argument('--flash', '-f', default=False, action='store_true')
     parser.add_argument('--if_freq', default=0, type=int)
     parser.add_argument('--scope', default=False, action='store_true', help='Activate softscope (scope needs to be compiled and SSH needs -X or -Y)')
+    parser.add_argument('--tqsample', default=False, action='store_true')
 
     args = parser.parse_args()
     r = Ran(args)
