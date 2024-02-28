@@ -7,9 +7,11 @@ import netifaces
 import os
 import argparse
 from ran import Ran
+from utils.logger import *
+
 
 def handle_sigint(sig, frame):
-    print("Stopping the process...")
+    logging.info("Stopping the process...")
     sys.exit(0)
 
 def tail_count(file_path, target_string):
@@ -42,7 +44,7 @@ def tail(file_path, target_string, max_num_search):
                 # Process the new lines
                 for line in new_lines:
                     if re.search(target_string, line):
-                        print(f"Found '{target_string}' in line: {line}")
+                        logging.info(f"Found '{target_string}' in line: {line}")
                         return True
 
             curr_position = file.tell()  # Current file position
@@ -51,7 +53,7 @@ def tail(file_path, target_string, max_num_search):
             time.sleep(3)
             file.seek(0, 2) # Go to last line
             if curr_position == file.tell():
-                print("File not updated for more than 1 second")
+                logging.info("File not updated for more than 1 second")
                 return False
             else:
                 file.seek(curr_position)
@@ -70,13 +72,13 @@ def get_interface_ip(interface_prefix):
     return None
 
 def stop_and_kill_subp(process):
-    print("Stopping UE")
+    logging.info("Stopping UE")
     process.send_signal(signal.SIGINT)
     time.sleep(1)
     process.send_signal(signal.SIGINT)
     time.sleep(2)
     if process.poll() is None:
-        print('Process still running despite sending SIGINT. Force killing.')
+        logging.info('Process still running despite sending SIGINT. Force killing.')
         process.send_signal(signal.SIGKILL)
     process.wait()
 
@@ -107,7 +109,7 @@ def run_and_check_conn_established(command_to_run):
         stop_and_kill_subp(ueProcess);
         # Restart again
         time.sleep(5)
-        print("Restarting UE")
+        logging.info("Restarting UE")
         res, ueProcess = run_and_check_conn_established(command_to_run)
 
     return True, ueProcess
@@ -115,14 +117,14 @@ def run_and_check_conn_established(command_to_run):
 def start_core_iperf(imsi):
     current_directory = '/root'
     port = int('52'+imsi[-2:])
-    print(f"Starting iperf server job for {imsi} in port {port}")
+    logging.info(f"Starting iperf server job for {imsi} in port {port}")
     output_filename = f'{current_directory}/iperf-core-server-ue-{imsi}.log'
     output_file = open(output_filename, "w")
     iperfSrvCmd = ['iperf3', '-s', '-p', f'{port}']
     try:
         iperfSrv = subprocess.Popen(iperfSrvCmd, stdout=output_file, stderr=subprocess.STDOUT)
     except Exception as e:
-        print("Error starting server")
+        logging.error("Error starting server")
         return None
 
     return iperfSrv
@@ -149,8 +151,8 @@ def scan_docker_logs_and_do_stuff(service_name):
 
                 # Extract the substring after the search string
                 imsi = new_logs[search_index + len(get_imsi):].strip()
-                print("Found new UE")
-                print(imsi)
+                logging.info("Found new UE")
+                logging.info(imsi)
                 # Set status
                 os.system(f'echo "ACTIVE" > {status_file}')
                 srvJ = start_core_iperf(imsi)
@@ -162,7 +164,7 @@ def scan_docker_logs_and_do_stuff(service_name):
 
         # Check if the subprocess has finished, indicating an error or termination
         if dockerScanPocess.poll() is not None:
-            print("Scan process finished")
+            logging.info("Scan process finished")
             break
 
     dockerScanPocess.terminate()
@@ -179,7 +181,7 @@ def remove_cmd_line_option(command, option):
         command.pop(index) # remove option
         command.pop(index) # remove value
     except ValueError:
-        print(f"Option {option} not found in command line")
+        logging.error(f"Option {option} not found in command line")
 
 def run_and_find_A(command_to_run, args):
     # Remove A from command line
@@ -219,16 +221,16 @@ def run_and_find_A(command_to_run, args):
       if fail_RAR_count > min_fail_RAR_count:
           A += 3
           pass_count = 0
-          print(f"RAR fail count: {fail_RAR_count}. Trying again with A: {A}.")
+          logging.info(f"RAR fail count: {fail_RAR_count}. Trying again with A: {A}.")
       else:
           pass_count += 1
-          print(f"RAR succeeded. Current success count: {pass_count}.")
+          logging.info(f"RAR succeeded. Current success count: {pass_count}.")
           if pass_count >= max_pass_count:
-              print(f"RAR Succeeded {pass_count} consecutive runs with A = {A}.")
+              logging.info(f"RAR Succeeded {pass_count} consecutive runs with A = {A}.")
               break
 
       if A >= args.stop_A:
-          print("Reached max A. End program.")
+          logging.info("Reached max A. End program.")
           break
       # Remove A from command line
       remove_cmd_line_option(command_to_run, '-A')
@@ -240,11 +242,11 @@ def run_UE_test(args):
     ue = Ran(args)
     ue.execute = False
     ue.run()
-    print(ue.cmd_stored)
+    logging.info(ue.cmd_stored)
     conn_established = False
     if args.ue_find_A:
         A = run_and_find_A(ue.cmd_stored, args)
-        print(f"Found A = {A} to be stable. Try it manually now.")
+        logging.info(f"Found A = {A} to be stable. Try it manually now.")
     else:
         conn_established, ueProcess = run_and_check_conn_established(ue.cmd_stored)
         if conn_established:
@@ -252,19 +254,19 @@ def run_UE_test(args):
             ip_address = get_interface_ip(interface_prefix)
             dn_ip_address = '192.168.70.129'
             if ip_address:
-                print(f"The IP address of interface {interface_prefix} is: {ip_address}")
+                logging.info(f"The IP address of interface {interface_prefix} is: {ip_address}")
                 # default route
                 add_route_cmd = "route add default gw 12.1.1.1"
                 try:
                     subprocess.run(add_route_cmd, shell=True, check=True)
-                    print("Default route added successfully.")
+                    logging.info("Default route added successfully.")
                 except subprocess.CalledProcessError as e:
-                    print(f"Error adding default route: {e}")
+                    logging.error(f"Error adding default route: {e}")
                 except Exception as e:
-                    print(f"An unexpected error occurred: {e}")
+                    logging.error(f"An unexpected error occurred: {e}")
 
                 # DL iperf
-                print("Starting DL iperf job")
+                logging.info("Starting DL iperf job")
                 output_filename = f'{current_directory}/iperf-ue-DL.log'
                 output_file = open(output_filename, "w")
                 #iperfDLcmd = f'iperf3 -u --bind {ip_address} -b {args.dl_iperf_rate}M -c {dn_ip_address} -t {args.iperf_time} -p 52{ue.node_id[1:]} -R'.split()
@@ -272,11 +274,11 @@ def run_UE_test(args):
                 try:
                     iperfDL = subprocess.Popen(iperfDLcmd, stdout=output_file, stderr=subprocess.STDOUT)
                 except Exception as e:
-                    print("Error starting DL iperf job")
+                    logging.error("Error starting DL iperf job")
                 iperfDL.wait()
-                print("Finished iperf DL job")
+                logging.info("Finished iperf DL job")
                 # UL iperf
-                print("Starting UL client job")
+                logging.info("Starting UL client job")
                 output_filename = f'{current_directory}/iperf-ue-UL.log'
                 output_file = open(output_filename, "w")
                 #iperfULcmd = f'iperf3 -u --bind {ip_address} -b {args.ul_iperf_rate}M -c {dn_ip_address} -t {args.iperf_time} -p 52{ue.node_id[1:]}'.split()
@@ -284,11 +286,11 @@ def run_UE_test(args):
                 try:
                     iperfUL = subprocess.Popen(iperfULcmd, stdout=output_file, stderr=subprocess.STDOUT)
                 except Exception as e:
-                    print("Error starting UL iperf job")
+                    logging.error("Error starting UL iperf job")
                 iperfUL.wait()
-                print("Finished iperf UL job")
+                logging.info("Finished iperf UL job")
             else:
-                print(f"No interface found with the prefix {interface_prefix}")
+                logging.info(f"No interface found with the prefix {interface_prefix}")
         else:
             stop_and_kill_ue(ueThread)
 
@@ -301,16 +303,20 @@ def run_gnb_test(args):
     gnb = Ran(args)
     gnb.execute = False
     gnb.run()
-    print(gnb.cmd_stored)
+    logging.info(gnb.cmd_stored)
     output_file = open('/root/last_log', "w")
     p = subprocess.Popen(gnb.cmd_stored, stdout=output_file, stderr=subprocess.STDOUT)
     while True:
         if p.poll() is not None:
-            print("gNB process ended. Restarting it.")
+            logging.info("gNB process ended. Restarting it.")
             p = subprocess.Popen(gnb.cmd_stored, stdout=output_file, stderr=subprocess.STDOUT)
         time.sleep(5)
 
 if __name__ == '__main__':
+    # set logger
+    log_filename = os.path.basename(__file__).replace('.py', '.log')
+    set_logger(log_filename)
+
     parser = argparse.ArgumentParser(description='Parameters to run tests')
     parser.add_argument('-T', '--type',
                         required=True,
@@ -362,4 +368,4 @@ if __name__ == '__main__':
     elif args.type == 'core-nw':
         run_core_test()
     else:
-        print("Unknown node type")
+        logging.error("Unknown node type")

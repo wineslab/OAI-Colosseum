@@ -5,7 +5,7 @@
 # written by Benedikt Waldvogel (mail at bwaldvogel.de)
 
 from __future__ import absolute_import, division, print_function
-import logging
+from utils.logger import *
 import scapy.config
 import scapy.layers.l2
 import scapy.route
@@ -16,9 +16,6 @@ import os
 import getopt
 import sys
 import subprocess
-
-logging.basicConfig(format='%(message)s', datefmt='%Y-%m-%d %H:%M:%S', level=logging.DEBUG)
-logger = logging.getLogger(__name__)
 
 
 def long2net(arg):
@@ -32,7 +29,7 @@ def to_CIDR_notation(bytes_network, bytes_netmask):
     netmask = long2net(bytes_netmask)
     net = "%s/%s" % (network, netmask)
     if netmask < 16:
-        #logger.warning("%s is too big. skipping" % net)
+        #logging.warning("%s is too big. skipping" % net)
         return None
 
     return net
@@ -44,14 +41,14 @@ def scan_and_print_neighbors(net, interface, timeout=5):
         for s, r in ans.res:
             line = r.sprintf("%ARP.psrc%")
             line = r.sprintf("%ARP.psrc%")
-            # logger.info(line)
+            # logging.info(line)
             command = ['route', 'add', '-net', '192.168.70.128/26', 'gw', line, 'dev', 'col0']
             response = subprocess.run(args=command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode
             command = ['ping', '-c', '1', '-t', '1', '192.168.70.129']
             response = subprocess.run(args=command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode
-            #logger.info("For host %s response is %s" % (line, response))
+            #logging.info("For host %s response is %s" % (line, response))
             if response == 0:
-                logger.info("IP address of host running CN is %s" % line)
+                logging.info("IP address of host running CN is %s" % line)
                 break
             else:
                 os.system("route del -net 192.168.70.128/26")
@@ -63,7 +60,7 @@ def scan_and_print_neighbors(net, interface, timeout=5):
                 pass
     except socket.error as e:
         if e.errno == errno.EPERM:     # Operation not permitted
-            logger.error("%s. Did you run as root?", e.strerror)
+            logging.error("%s. Did you run as root?", e.strerror)
         else:
             raise
 
@@ -90,7 +87,7 @@ def main(interface_to_scan=None):
                 and (interface.startswith('docker')
                      or interface.startswith('br-')
                      or interface.startswith('tun')):
-            logger.warning("Skipping interface '%s'" % interface)
+            logging.warning("Skipping interface '%s'" % interface)
             continue
 
         net = to_CIDR_notation(network, netmask)
@@ -100,7 +97,7 @@ def main(interface_to_scan=None):
             command = ['ping', '-c', '1', '-t', '1', '192.168.70.129']
             response = subprocess.run(args=command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode
             if response == 0:
-                logger.info("Route to CN host exists!")
+                logging.info("Route to CN host exists!")
                 found = True
             else:
                 command = ['route', 'del', '-net', '192.168.70.128/26']
@@ -110,11 +107,11 @@ def main(interface_to_scan=None):
                 scan_and_print_neighbors(net, interface)
                 command = ['ping', '-c', '1', '-t', '1', '192.168.70.129']
                 found = (subprocess.run(args=command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode) == 0
-                #logger.info("Found is %s" % found)
+                #logging.info("Found is %s" % found)
                 if found:
-                    logger.info("Route to core network added!")
+                    logging.info("Route to core network added!")
                 else:
-                    logger.info("Route to core network not found. Retrying...")
+                    logging.info("Route to core network not found. Retrying...")
 
 
 def usage():
@@ -130,6 +127,10 @@ if __name__ == "__main__":
         sys.exit(2)
 
     interface = None
+
+    # set logger
+    log_filename = os.path.basename(__file__).replace('.py', '.log')
+    set_logger(log_filename)
 
     for o, a in opts:
         if o in ('-h', '--help'):

@@ -10,6 +10,7 @@ from utils.set_route_to_cn import main as set_route
 from utils.x300 import ctrl_socket
 import subprocess
 import signal
+from utils.logger import *
 load_dotenv()
 
 USRP_DEV = os.getenv('USRP_DEV')
@@ -173,7 +174,7 @@ class Ran:
         elif self.type == 'ue':
             self.run_ue()
         else:
-            print("Error")
+            logging.error("Error")
             exit(0)
 
     def run_gnb(self, type):
@@ -229,7 +230,7 @@ class Ran:
         self.cmd_stored = pre_path + executable + oai_args
         if self.execute:
             command_to_run = f"""{' '.join(self.cmd_stored)}  2>&1 | tee ~/mylogs/gNB-$(date +"%m%d%H%M").log | tee ~/last_log"""
-            print(command_to_run)
+            logging.info(command_to_run)
             os.system(command_to_run)
 
     def run_ue(self):
@@ -272,11 +273,15 @@ class Ran:
         self.cmd_stored = pre_path + executable + args
         final_cmd = f"""{' '.join(self.cmd_stored)} 2>&1 | tee ~/mylogs/UE1-$(date +"%m%d%H%M").log | tee ~/last_log"""
         if self.execute:
-            print(final_cmd)
+            logging.info(final_cmd)
             os.system(final_cmd)
 
 
 if __name__ == '__main__':
+    # set logger
+    log_filename = os.path.basename(__file__).replace('.py', '.log')
+    set_logger(log_filename)
+
     parser = argparse.ArgumentParser(description='Parameters to run RAN element')
     parser.add_argument('-n', '--numerology',
                         default=1,
