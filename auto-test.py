@@ -350,7 +350,7 @@ if __name__ == '__main__':
     parser.add_argument('-c', '--channel',
                         default=0,
                         type=int)
-    parser.add_argument('--tqsample', default=False, action='store_true')
+    parser.add_argument('--tqsample', default=True, action='store_true', help='use 3/4 of sampling rate in USRP')
     parser.add_argument('--flash', '-f', default=False, action='store_true')
     args = parser.parse_args()
     args.f1_remote_node = '0.0.0.0'
