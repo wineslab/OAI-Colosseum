@@ -229,6 +229,7 @@ class Ran:
         self.cmd_stored = pre_path + executable + oai_args
         if self.execute:
             command_to_run = f"""{' '.join(self.cmd_stored)}  2>&1 | tee ~/mylogs/gNB-$(date +"%m%d%H%M").log | tee ~/last_log"""
+            print(command_to_run)
             os.system(command_to_run)
 
     def run_ue(self):
@@ -271,6 +272,7 @@ class Ran:
         self.cmd_stored = pre_path + executable + args
         final_cmd = f"""{' '.join(self.cmd_stored)} 2>&1 | tee ~/mylogs/UE1-$(date +"%m%d%H%M").log | tee ~/last_log"""
         if self.execute:
+            print(final_cmd)
             os.system(final_cmd)
 
 
