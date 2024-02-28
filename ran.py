@@ -84,8 +84,7 @@ class Ran:
         args = []
         # common for DU and donor (monolithic)
         if f1_type == 'du' or f1_type == 'donor':
-            macrlcs = 'MACRLCs = \(\{ \}\)\;'
-            os.system(f"echo {macrlcs} >> {self.config_file}")
+            minrxtxtime = 6
             args += ['--MACRLCs.[0].num_cc', '1',
                      '--MACRLCs.[0].tr_s_preference', 'local_L1',
                      '--MACRLCs.[0].pusch_TargetSNRx10', '150',
@@ -103,17 +102,14 @@ class Ran:
                          '--MACRLCs.[0].remote_n_portc', '501',
                          '--MACRLCs.[0].remote_n_portd', '2252']
             elif f1_type == 'donor':
-                args += ['--MACRLCs.[0].tr_n_preference', 'local_RRC']
-            l1s = 'L1s = \(\{ \}\)\;'
-            os.system(f"echo {l1s} >> {self.config_file}")
+                args += ['--MACRLCs.[0].tr_n_preference', 'local_RRC',
+                         '--gNBs.[0].min_rxtxtime', f'{minrxtxtime}']
             args += ['--L1s.[0].num_cc', '1',
                      '--L1s.[0].tr_n_preference', f'local_mac',
                      '--L1s.[0].pusch_proc_threads', '32',
                      '--L1s.[0].prach_dtx_threshold', '120',
                      '--L1s.[0].pucch0_dtx_threshold', '150',
                      '--L1s.[0].ofdm_offset_divisor', '8']
-            rus = 'RUs = \(\{ \}\)\;'
-            os.system(f"echo {rus} >> {self.config_file}")
             args += ['--RUs.[0].local_rf', 'yes',
                      '--RUs.[0].nb_tx', '1',
                      '--RUs.[0].nb_rx', '1',
@@ -128,8 +124,6 @@ class Ran:
                      '--RUs.[0].time_src', 'external',
                      '--RUs.[0].sdr_addrs', f'addr={USRP_ADDR}',
                      '--RUs.[0].if_freq', f'{self.if_freq}']
-            tss = 'THREAD_STRUCT = \(\{ \}\)\;'
-            os.system(f"echo {tss} >> {self.config_file}")
             args += ['--THREAD_STRUCT.[0].parallel_config', 'PARALLEL_SINGLE_THREAD',
                      '--THREAD_STRUCT.[0].worker_config', 'WORKER_ENABLE']
         elif f1_type == 'cu':
@@ -140,7 +134,8 @@ class Ran:
                      '--gNBs.[0].local_s_portc', '501',
                      '--gNBs.[0].local_s_portd', '2252',
                      '--gNBs.[0].remote_s_portc', '500',
-                     '--gNBs.[0].remote_s_portd', '2252']
+                     '--gNBs.[0].remote_s_portd', '2252',
+                     '--gNBs.[0].min_rxtxtime', f'{minrxtxtime}']
         return args
 
     def set_params(self, arfcn):
