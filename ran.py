@@ -252,7 +252,8 @@ class Ran:
                 '--clock-source', '1',
                 '--time-source', '1',
                 '--ue-fo-compensation',
-                '--if_freq', f'{self.if_freq}']
+                '--if_freq', f'{self.if_freq}',
+                '--uicc0.nssai_sd', '0']
         if self.args.type == 'phy-test':
             args += ['--phy-test']
         if self.args.rfsim > 0:
