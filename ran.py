@@ -238,7 +238,7 @@ class Ran:
             pre_path = ['gdb', '--args']
         args = ['--thread-pool', '-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1',
                 f'--{self.mode}',
-                '--uicc0.imsi', f'20899000074{self.node_id[1:]}',
+                '--uicc0.imsi', f'0010100000000{self.node_id[1:]}',
                 '--usrp-args', f'addr={USRP_ADDR}',
                 '--numerology', f'{self.numerology}',
                 '-r', f'{self.prb}',
