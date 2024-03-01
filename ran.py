@@ -182,12 +182,12 @@ class Ran:
             local_dev = IAB_DEV
         f1_cmd_args = self.set_config_file(type, local_ip, local_dev)
         LABW = get_locationandbandwidth(self.prb)
-        pre_path = ""
+        pre_path = []
         if self.args.numa > 0:
-            pre_path = ['numactl', f'--cpunodebind=netdev:{USRP_DEV}', f'--membind=netdev:{USRP_DEV}']
+            pre_path += ['numactl', f'--cpunodebind=netdev:{USRP_DEV}', f'--membind=netdev:{USRP_DEV}']
         if self.args.gdb > 0:
             # gdb override numa
-            pre_path = ['gdb', '--args']
+            pre_path += ['gdb', '--args']
         executable = [f'{OAI_PATH}cmake_targets/ran_build/build/nr-softmodem']
         oai_args = ['-O', f'{self.config_file}', '--usrp-tx-thread-config', '1']
         if self.prb >= 106 and self.numerology == 1:
@@ -230,12 +230,12 @@ class Ran:
 
     def run_ue(self):
         main_exe = [f'{OAI_PATH}cmake_targets/ran_build/build/nr-uesoftmodem']
-        pre_path = ""
+        pre_path = []
         if self.args.numa > 0:
-            pre_path = ['numactl', f'--cpunodebind=netdev:{USRP_DEV}', f'--membind=netdev:{USRP_DEV}']
+            pre_path += ['numactl', f'--cpunodebind=netdev:{USRP_DEV}', f'--membind=netdev:{USRP_DEV}']
         if self.args.gdb > 0:
             # gdb override numa
-            pre_path = ['gdb', '--args']
+            pre_path += ['gdb', '--args']
         args = ['--thread-pool', '-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1',
                 f'--{self.mode}',
                 '--uicc0.imsi', f'20899000074{self.node_id[1:]}',
