@@ -35,7 +35,8 @@ script_cmd=""
 if [ "$mode_type" == "gnb" ]; then
     script_cmd="auto-test.py -T gnb"
 elif [ "$mode_type" == "ue" ]; then
-    script_cmd="auto-test.py -T ue -t ${iperf_duration} -D ${dl_iperf_rate} -U ${ul_iperf_rate}"
+    # script_cmd="auto-test.py -T ue -t ${iperf_duration} -D ${dl_iperf_rate} -U ${ul_iperf_rate}"
+    script_cmd="auto-test.py -T ue -t ${iperf_duration}"
 elif [ "$mode_type" == "core" ]; then
     script_cmd="auto-test.py -T core-nw"
 else
