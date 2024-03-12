@@ -282,7 +282,7 @@ def run_UE_test(args):
                 output_filename = f'{current_directory}/iperf-ue-UL.log'
                 output_file = open(output_filename, "w")
                 #iperfULcmd = f'iperf3 -u --bind {ip_address} -b {args.ul_iperf_rate}M -c {dn_ip_address} -t {args.iperf_time} -p 52{ue.node_id[1:]}'.split()
-                iperfULcmd = f'python3 /root/sierra-wireless-automated-testing/src/iperf/iperf_run.py --type tcp --dir UL --save local --port 52{ue.node_id[1:]} --bind {ip_address}'.split()
+                iperfULcmd = f'python3 /root/sierra-wireless-automated-testing/src/iperf/iperf_run.py --type tcp --dir UL --duration {args.iperf_time} --save local --port 52{ue.node_id[1:]} --bind {ip_address}'.split()
                 try:
                     iperfUL = subprocess.Popen(iperfULcmd, stdout=output_file, stderr=subprocess.STDOUT)
                 except Exception as e:
