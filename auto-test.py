@@ -275,7 +275,8 @@ def run_UE_test(args):
                 if args.iperf_protocol == 'tcp':
                     iperfDLcmd = f'python3 /root/sierra-wireless-automated-testing/src/iperf/iperf_run.py --type {args.iperf_protocol} --dir DL --duration {args.iperf_time} --save local --port 52{ue.node_id[1:]} --bind {ip_address}'.split()
                 else:
-                    iperfDLcmd = f'python3 /root/sierra-wireless-automated-testing/src/iperf/iperf_run.py --type {args.iperf_protocol} --udp_rate_mbps {args.dl_iperf_rate} --dir DL --duration {args.iperf_time} --save local --port 52{ue.node_id[1:]} --bind {ip_address}'.split()
+                    iperf_target_rate_dl = ' '.join([str(x) for x in args.dl_iperf_rate])
+                    iperfDLcmd = f'python3 /root/sierra-wireless-automated-testing/src/iperf/iperf_run.py --type {args.iperf_protocol} --udp_rate_mbps {iperf_target_rate_dl} --dir DL --duration {args.iperf_time} --save local --port 52{ue.node_id[1:]} --bind {ip_address}'.split()
 
                 try:
                     iperfDL = subprocess.Popen(iperfDLcmd, stdout=output_file, stderr=subprocess.STDOUT)
@@ -293,7 +294,8 @@ def run_UE_test(args):
                 if args.iperf_protocol == 'tcp':
                     iperfULcmd = f'python3 /root/sierra-wireless-automated-testing/src/iperf/iperf_run.py --type {args.iperf_protocol} --dir UL --duration {args.iperf_time} --save local --port 52{ue.node_id[1:]} --bind {ip_address}'.split()
                 else:
-                    iperfULcmd = f'python3 /root/sierra-wireless-automated-testing/src/iperf/iperf_run.py --type {args.iperf_protocol} --udp_rate_mbps {args.dl_iperf_rate} --dir UL --duration {args.iperf_time} --save local --port 52{ue.node_id[1:]} --bind {ip_address}'.split()
+                    iperf_target_rate_ul = ' '.join([str(x) for x in args.ul_iperf_rate])
+                    iperfULcmd = f'python3 /root/sierra-wireless-automated-testing/src/iperf/iperf_run.py --type {args.iperf_protocol} --udp_rate_mbps {iperf_target_rate_ul} --dir UL --duration {args.iperf_time} --save local --port 52{ue.node_id[1:]} --bind {ip_address}'.split()
 
                 try:
                     iperfUL = subprocess.Popen(iperfULcmd, stdout=output_file, stderr=subprocess.STDOUT)
@@ -346,9 +348,11 @@ if __name__ == '__main__':
                         default=10,
                         type=int)
     parser.add_argument('-D', '--dl_iperf_rate',
+                        nargs='+',
                         default=10,
                         type=int)
     parser.add_argument('-U', '--ul_iperf_rate',
+                        nargs='+',
                         default=5,
                         type=int)
     parser.add_argument('-n', '--numerology',
