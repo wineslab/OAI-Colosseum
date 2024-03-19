@@ -6,6 +6,10 @@
 
 # send "s" to /tmp/mypipe (a named pipe that the incumbent is monitoring)
 
+# remove old systemctl logs
+journalctl --rotate
+journalctl --vacuum-time=1s
+
 echo "Beginning of batch job" > /logs/run.log
 SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
 APP_DIR="/root/OAI-Colosseum"
@@ -23,7 +27,6 @@ if [ "$mode_type" == "core" ]; then
   route add -net 12.1.1.0/24 gw 192.168.70.134 dev demo-oai
   python3 ${APP_DIR}/${script_cmd} &
 else
-  systemctl stop oai_ran.service
   echo "READY" > /tmp/NR_STATE
   echo "[`date`] Starting 5G ${mode_type} service from start.sh" >> /logs/run.log
   echo "[`date`] Command line ${script_cmd}" >> /logs/run.log
