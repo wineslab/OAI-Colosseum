@@ -376,7 +376,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
     args.f1_remote_node = '0.0.0.0'
     args.if_freq = 0
-    args.numa = False
+    args.numa = True
     args.gdb = False
     args.flash = False
     args.rfsim = False

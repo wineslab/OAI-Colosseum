@@ -14,6 +14,7 @@ from utils.logger import *
 load_dotenv()
 
 USRP_DEV = os.getenv('USRP_DEV')
+USRP_NUMA_NODE = os.getenv('USRP_NUMA_NODE')
 OAI_PATH = os.getenv('OAI_PATH')
 BASE_CONF = os.getenv('BASE_CONF')
 USRP_ADDR = os.getenv('USRP_ADDR')
@@ -184,7 +185,8 @@ class Ran:
         LABW = get_locationandbandwidth(self.prb)
         pre_path = []
         if self.args.numa > 0:
-            pre_path += ['numactl', f'--cpunodebind=netdev:{USRP_DEV}', f'--membind=netdev:{USRP_DEV}']
+            # pre_path += ['numactl', f'--cpunodebind=netdev:{USRP_DEV}', f'--membind=netdev:{USRP_DEV}']
+            pre_path += ['numactl', f'--cpunodebind={USRP_NUMA_NODE}', f'--membind={USRP_NUMA_NODE}']
         if self.args.gdb > 0:
             # gdb override numa
             pre_path += ['gdb', '--args']
@@ -232,7 +234,8 @@ class Ran:
         main_exe = [f'{OAI_PATH}cmake_targets/ran_build/build/nr-uesoftmodem']
         pre_path = []
         if self.args.numa > 0:
-            pre_path += ['numactl', f'--cpunodebind=netdev:{USRP_DEV}', f'--membind=netdev:{USRP_DEV}']
+            # pre_path += ['numactl', f'--cpunodebind=netdev:{USRP_DEV}', f'--membind=netdev:{USRP_DEV}']
+            pre_path += ['numactl', f'--cpunodebind={USRP_NUMA_NODE}', f'--membind={USRP_NUMA_NODE}']
         if self.args.gdb > 0:
             # gdb override numa
             pre_path += ['gdb', '--args']
