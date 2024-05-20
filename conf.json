@@ -23,7 +23,7 @@
     "106": {
       "arfcns": [641280, 641668],
       "if_freqs": [980000000, 1020000000],
-      "timing_advance": 2539,
+      "timing_advance": 2400,
       "ssb_start": 516
     }
   }
