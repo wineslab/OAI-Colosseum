@@ -27,6 +27,7 @@ while IFS='=' read -r key value || [[ -n "$line" ]]; do
             "ul_iperf_rate") ul_iperf_rate="$value" ;;
             "iperf_duration") iperf_duration="$value" ;;
             "iperf_protocol") iperf_protocol="$value" ;;
+            "timing_advance") timing_advance="$value" ;;
             # Add more cases for other keys as needed
         esac
     fi
@@ -37,6 +38,7 @@ if [ "$mode_type" == "gnb" ]; then
     script_cmd="auto-test.py -T gnb"
 elif [ "$mode_type" == "ue" ]; then
     script_cmd="auto-test.py -T ue -t ${iperf_duration} --iperf_protocol ${iperf_protocol} -D ${dl_iperf_rate} -U ${ul_iperf_rate}"
+    if [ -z ${timing_advance+x} ]; then ; else script_cmd=${script_cmd}" --timing_advance ${timing_advance}"; fi
     echo ${script_cmd}
     # script_cmd="auto-test.py -T ue -t ${iperf_duration}"
 elif [ "$mode_type" == "core" ]; then

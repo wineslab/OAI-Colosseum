@@ -371,6 +371,9 @@ if __name__ == '__main__':
                         type=str,
                         choices=['tcp', 'udp'],
                         help='Type of iPerf test to run')
+    parser.add_argument('--timing_advance',
+                        type=int,
+                        help='Timing advance. Only used at UE-side. Overrides timing advance of base configuration')
     parser.add_argument('--tqsample', default=True, action='store_true', help='use 3/4 of sampling rate in USRP')
     parser.add_argument('--flash', '-f', default=False, action='store_true')
     args = parser.parse_args()
@@ -381,6 +384,9 @@ if __name__ == '__main__':
     args.flash = False
     args.rfsim = False
     args.scope = False
+
+    print(args)
+    exit(1)
 
     if args.type == 'gnb':
         run_gnb_test(args)

@@ -73,6 +73,10 @@ class Ran:
         self.set_if_freq(self.channel)
         self.set_params(arfcn=self.conf['arfcns'][self.channel])
 
+        # override default with the value passed as input argument
+        if args.timing_advance is not None:
+            self.timing_advance = args.timing_advance
+
         self.set_ips()
         try:
             os.remove('/root/last_log')
