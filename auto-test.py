@@ -385,9 +385,6 @@ if __name__ == '__main__':
     args.rfsim = False
     args.scope = False
 
-    print(args)
-    exit(1)
-
     if args.type == 'gnb':
         run_gnb_test(args)
     elif args.type == 'ue':

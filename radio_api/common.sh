@@ -38,7 +38,7 @@ if [ "$mode_type" == "gnb" ]; then
     script_cmd="auto-test.py -T gnb"
 elif [ "$mode_type" == "ue" ]; then
     script_cmd="auto-test.py -T ue -t ${iperf_duration} --iperf_protocol ${iperf_protocol} -D ${dl_iperf_rate} -U ${ul_iperf_rate}"
-    if [ -z ${timing_advance+x} ]; then ; else script_cmd=${script_cmd}" --timing_advance ${timing_advance}"; fi
+    if [ -z ${timing_advance+x} ]; then :; else script_cmd=${script_cmd}" --timing_advance ${timing_advance}"; fi
     echo ${script_cmd}
     # script_cmd="auto-test.py -T ue -t ${iperf_duration}"
 elif [ "$mode_type" == "core" ]; then
