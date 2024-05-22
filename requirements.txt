@@ -1,3 +1,4 @@
 nrarfcn
 argparse
 python-dotenv
+scapy
