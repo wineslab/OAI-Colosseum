@@ -26,12 +26,18 @@ cd ${APP_DIR}
 if [ "$mode_type" == "core" ]; then
   route add -net 12.1.1.0/24 gw 192.168.70.134 dev demo-oai
   python3 ${APP_DIR}/${script_cmd} &
-else
+elif [ "$mode_type" == "gnb" ] || [ "$mode_type" == "ue" ]; then
+  if [ "$mode_type" == "gnb" ]; then
+    python3 ${APP_DIR}/dapp.py &
+  fi
   echo "READY" > /tmp/NR_STATE
   echo "[`date`] Starting 5G ${mode_type} service from start.sh" >> /logs/run.log
   echo "[`date`] Command line ${script_cmd}" >> /logs/run.log
   cd ${APP_DIR}
   python3 ${APP_DIR}/${script_cmd}
+else
+  # Handle other cases or default behavior here
+  echo "Unknown mode_type: ${mode_type}" >> /logs/run.log
 fi
 
 exit 0
