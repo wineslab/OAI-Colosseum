@@ -13,6 +13,7 @@ journalctl --vacuum-time=1s
 echo "Beginning of batch job" > /logs/run.log
 SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
 APP_DIR="/root/OAI-Colosseum"
+SPEAR_DIR="/root/spear-dApp"
 
 source ${SCRIPT_DIR}/common.sh
 
@@ -28,7 +29,7 @@ if [ "$mode_type" == "core" ]; then
   python3 ${APP_DIR}/${script_cmd} &
 elif [ "$mode_type" == "gnb" ] || [ "$mode_type" == "ue" ]; then
   if [ "$mode_type" == "gnb" ]; then
-    python3 ${APP_DIR}/dapp.py &
+    python3 ${SPEAR_DIR}/dapp.py &
   fi
   echo "READY" > /tmp/NR_STATE
   echo "[`date`] Starting 5G ${mode_type} service from start.sh" >> /logs/run.log
