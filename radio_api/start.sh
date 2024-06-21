@@ -29,7 +29,7 @@ if [ "$mode_type" == "core" ]; then
   python3 ${APP_DIR}/${script_cmd} &
 elif [ "$mode_type" == "gnb" ] || [ "$mode_type" == "ue" ]; then
   if [ "$mode_type" == "gnb" ]; then
-    python3 ${SPEAR_DIR}/dapp/dapp/dapp.py &
+    python3 ${SPEAR_DIR}/dapp/dapp.py &
   fi
   echo "READY" > /tmp/NR_STATE
   echo "[`date`] Starting 5G ${mode_type} service from start.sh" >> /logs/run.log
