@@ -225,6 +225,9 @@ class Ran:
                      '--gNBs.[0].NETWORK_INTERFACES.GNB_INTERFACE_NAME_FOR_NGU', f'{local_dev}',
                      '--gNBs.[0].NETWORK_INTERFACES.GNB_IPV4_ADDRESS_FOR_NG_AMF', f'{local_ip}',
                      '--gNBs.[0].NETWORK_INTERFACES.GNB_IPV4_ADDRESS_FOR_FOR_NGU', f'{local_ip}']
+	# Set T tracer
+        oai_args += ['--T_stdout', '2']
+
 
         # Set F1 parameters
         oai_args += f1_cmd_args
