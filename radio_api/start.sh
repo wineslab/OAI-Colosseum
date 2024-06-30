@@ -27,7 +27,7 @@ cd ${APP_DIR}
 if [ "$mode_type" == "core" ]; then
   route add -net 12.1.1.0/24 gw 192.168.70.134 dev demo-oai
   python3 ${APP_DIR}/${script_cmd} &
-elif [ "$mode_type" == "gnb" ] || [ "$mode_type" == "ue" ]; then
+else
   if [ "$mode_type" == "gnb" ]; then
     python3 ${SPEAR_DIR}/src/dapp/dapp.py &
   fi
@@ -36,9 +36,6 @@ elif [ "$mode_type" == "gnb" ] || [ "$mode_type" == "ue" ]; then
   echo "[`date`] Command line ${script_cmd}" >> /logs/run.log
   cd ${APP_DIR}
   python3 ${APP_DIR}/${script_cmd}
-else
-  # Handle other cases or default behavior here
-  echo "Unknown mode_type: ${mode_type}" >> /logs/run.log
 fi
 
 exit 0
