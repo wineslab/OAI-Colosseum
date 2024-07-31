@@ -220,7 +220,8 @@ class Ran:
                      '--gNBs.[0].NETWORK_INTERFACES.GNB_IPV4_ADDRESS_FOR_FOR_NGU', f'{local_ip}']
 	    # Set T tracer and other parameters used by the dApps
         oai_args += ['--T_stdout', '2',
-                     '--gNBs.[0].do_SRS', '0']
+                    #  '--gNBs.[0].do_SRS', '0'
+                     ]
 
         # Set F1 parameters
         oai_args += f1_cmd_args
