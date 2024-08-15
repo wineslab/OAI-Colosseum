@@ -253,7 +253,6 @@ class Ran:
                 '--ssb', f'{self.conf["ssb_start"]}',
                 '--band', '78',
                 '-C', f'{self.ssb_frequency}',
-                '--nokrnmod', '1',
                 '--ue-txgain', '0',
                 '-A', f'{self.conf["timing_advance"]}',
                 '--clock-source', '1',
