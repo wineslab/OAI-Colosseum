@@ -207,6 +207,8 @@ class Ran:
             oai_args += ['-d']
         oai_args += ['--continuous-tx']
         oai_args += ['--thread-pool', '-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1']
+        # Run OAI with colors disabled and instead with timestamps
+        oai_args += ['--log_config.global_log_options', 'nocolor,level,time']
         # Set cell name and id
         oai_args += ['--Active_gNBs', f'IAB-{self.node_id}',
                      '--gNBs.[0].gNB_ID', f'{self.node_id}',
@@ -244,6 +246,7 @@ class Ran:
             # gdb override numa
             pre_path += ['gdb', '--args']
         args = ['--thread-pool', '-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1',
+                '--log_config.global_log_options', 'nocolor,level,time',
                 f'--{self.mode}',
                 '--uicc0.imsi', f'20899000074{self.node_id[1:]}',
                 '--usrp-args', f'addr={USRP_ADDR}',
