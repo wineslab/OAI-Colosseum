@@ -101,7 +101,7 @@ def run_and_check_conn_established(command_to_run):
     # Set status
     os.system(f'echo "ACTIVE" > {status_file}')
 
-    target_string = r'Interface .* successfully configured, ip address'
+    target_string = r'Interface .* successfully configured, IPv4'
     conn_established = tail(output_filename, target_string, 10)
 
     if not conn_established:
