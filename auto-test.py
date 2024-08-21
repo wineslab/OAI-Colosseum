@@ -101,7 +101,10 @@ def run_and_check_conn_established(command_to_run):
     # Set status
     os.system(f'echo "ACTIVE" > {status_file}')
 
-    target_string = r'Interface .* successfully configured, ip address'
+    # the target string below should match both UE logs until tag 2024.w30,
+    # which contain the substring "ip address", and after tag 2024.w30,
+    # which contain the substring "IPv4"
+    target_string = r'Interface .* successfully configured, (ip address|IPv4)'
     conn_established = tail(output_filename, target_string, 10)
 
     if not conn_established:
