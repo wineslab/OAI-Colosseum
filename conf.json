@@ -21,7 +21,7 @@
       "timing_advance": 1500
     },
     "106": {
-      "arfcns": [639000, 641668],
+      "arfcns": [630048, 643296],
       "if_freqs": [980000000, 1020000000],
       "timing_advance": 2539,
       "ssb_start": 516
