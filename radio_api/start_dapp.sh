@@ -2,7 +2,7 @@
 
 DAPP_DIR="/root/spear-dApp"
 echo "[`date`] Starting dApp" >> /logs/run.log
-echo "[`date`] DAPP_DIR ${DAPP_DIR}" >> /logs/run.log
+echo "[`date`] dApp directory: ${DAPP_DIR}" >> /logs/run.log
 
 # create directory needed by dapp
 mkdir -p /tmp/dapps
