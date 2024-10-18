@@ -9,5 +9,5 @@ mkdir -p /tmp/dapps
 
 # start dapp
 # python3 ${DAPP_DIR}/src/dapp/dapp.py --control --profile --time 2> /logs/dapp_error.log
+echo "[`date`] dApp args: ${dapp_args}" >> /logs/run.log
 python3 ${DAPP_DIR}/src/dapp/dapp.py ${dapp_args} 2> /logs/dapp_error.log
-
