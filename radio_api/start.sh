@@ -33,6 +33,9 @@ else
   echo "READY" > /tmp/NR_STATE
   echo "[`date`] Starting 5G ${mode_type} service from start.sh" >> /logs/run.log
   echo "[`date`] Command line ${script_cmd}" >> /logs/run.log
+
+  cd ${APP_DIR}
+  python3 ${APP_DIR}/${script_cmd}
 fi
 
 exit 0
