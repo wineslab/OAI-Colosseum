@@ -29,7 +29,7 @@ if [ "$mode_type" == "core" ]; then
   python3 ${APP_DIR}/${script_cmd} &
 else
   if [ "$mode_type" == "gnb" ] && [ "$start_dapp" == "true" ]; then
-    echo "[`date`] --- Starting dApp ---" >> /logs/run.log
+    echo "[`date`] Calling dApp script" >> /logs/run.log
     . ${RADIO_API_DIR}/start_dapp.sh &
   fi
   echo "READY" > /tmp/NR_STATE
