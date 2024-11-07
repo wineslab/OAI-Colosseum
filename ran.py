@@ -231,6 +231,11 @@ class Ran:
 
         # Set F1 parameters
         oai_args += f1_cmd_args
+
+        # Add any additional extra args passed
+        if self.args.oai_extra_args:
+            oai_args += [self.args.oai_extra_args]
+
         self.cmd_stored = pre_path + executable + oai_args
         if self.execute:
             command_to_run = f"""{' '.join(self.cmd_stored)}  2>&1 | tee ~/mylogs/gNB-$(date +"%m%d%H%M").log | tee ~/last_log"""
