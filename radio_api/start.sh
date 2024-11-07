@@ -13,7 +13,7 @@ journalctl --vacuum-time=1s
 echo "Beginning of batch job" > /logs/run.log
 SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
 APP_DIR="/root/OAI-Colosseum"
-SPEAR_DIR="/root/spear-dApp"
+RADIO_API_DIR="/root/radio_api"
 
 source ${SCRIPT_DIR}/common.sh
 
@@ -28,17 +28,14 @@ if [ "$mode_type" == "core" ]; then
   route add -net 12.1.1.0/24 gw 192.168.70.134 dev demo-oai
   python3 ${APP_DIR}/${script_cmd} &
 else
-  if [ "$mode_type" == "gnb" ]; then
-    python3 ${SPEAR_DIR}/src/dapp/dapp.py --control --profile --time 2> /logs/dapp_error.log &
+  if [ "$mode_type" == "gnb" ] && [ "$start_dapp" == "true" ]; then
+    echo "[`date`] Calling dApp script" >> /logs/run.log
+    . ${RADIO_API_DIR}/start_dapp.sh &
   fi
   echo "READY" > /tmp/NR_STATE
   echo "[`date`] Starting 5G ${mode_type} service from start.sh" >> /logs/run.log
   echo "[`date`] Command line ${script_cmd}" >> /logs/run.log
 
-  # create directories used by dApp
-  mkdir -p /tmp/dapps
-
-  # start dApp
   cd ${APP_DIR}
   python3 ${APP_DIR}/${script_cmd}
 fi

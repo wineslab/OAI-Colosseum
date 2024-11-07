@@ -28,6 +28,8 @@ while IFS='=' read -r key value || [[ -n "$line" ]]; do
             "iperf_duration") iperf_duration="$value" ;;
             "iperf_protocol") iperf_protocol="$value" ;;
             "timing_advance") timing_advance="$value" ;;
+            "start_dapp") start_dapp="$value" ;;
+            "dapp_args") dapp_args="$value" ;;
             # Add more cases for other keys as needed
         esac
     fi
