@@ -234,12 +234,12 @@ class Ran:
         oai_args += ['--T_stdout', '2',
                      '--gNBs.[0].do_SRS', '0']
 
-        # Set F1 parameters
-        oai_args += f1_cmd_args
-
         # Add any additional extra args passed
         if self.oai_extra_args:
             oai_args += self.oai_extra_args
+
+        # Set F1 parameters
+        oai_args += f1_cmd_args
 
         self.cmd_stored = pre_path + executable + oai_args
         if self.execute:
