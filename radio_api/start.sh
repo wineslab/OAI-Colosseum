@@ -37,7 +37,7 @@ else
   echo "[`date`] Command line ${script_cmd}" >> /logs/run.log
 
   cd ${APP_DIR}
-  eval "python3 ${APP_DIR}/${script_cmd}"
+  eval "python3 ${APP_DIR}/${script_cmd}" 2> /logs/python_error.log
 fi
 
 exit 0

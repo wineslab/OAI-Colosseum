@@ -78,9 +78,9 @@ class Ran:
             self.conf["timing_advance"] = args.timing_advance
 
         # get extra args
-        oai_extra_args = []
+        self.oai_extra_args = []
         if self.args.oai_extra_args:
-            oai_extra_args = self.args.oai_extra_args.split(' ')
+            self.oai_extra_args = self.args.oai_extra_args.split(' ')
 
         self.set_ips()
         try:
