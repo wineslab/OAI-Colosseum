@@ -77,6 +77,11 @@ class Ran:
         if args.timing_advance is not None:
             self.conf["timing_advance"] = args.timing_advance
 
+        # get extra args
+        oai_extra_args = []
+        if self.args.oai_extra_args:
+            oai_extra_args = self.args.oai_extra_args.split(' ')
+
         self.set_ips()
         try:
             os.remove('/root/last_log')
@@ -233,8 +238,8 @@ class Ran:
         oai_args += f1_cmd_args
 
         # Add any additional extra args passed
-        if self.args.oai_extra_args:
-            oai_args += [self.args.oai_extra_args]
+        if self.oai_extra_args:
+            oai_args += self.oai_extra_args
 
         self.cmd_stored = pre_path + executable + oai_args
         if self.execute:
