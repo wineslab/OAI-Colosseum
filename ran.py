@@ -200,7 +200,8 @@ class Ran:
             oai_args.append('-E')
         if self.args.rfsim > 0:
             oai_args += ['--rfsim']
-        oai_args += [f'--{self.mode}']
+        if self.mode != 'sa':
+            oai_args += [f'--{self.mode}']
         if self.mode == 'phy-test':
             oai_args += [f'{self.phytest}']
         if self.args.scope:
@@ -247,7 +248,6 @@ class Ran:
             pre_path += ['gdb', '--args']
         args = ['--thread-pool', '-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1',
                 '--log_config.global_log_options', 'nocolor,level,time',
-                f'--{self.mode}',
                 '--uicc0.imsi', f'20899000074{self.node_id[1:]}',
                 '--usrp-args', f'addr={USRP_ADDR}',
                 '--numerology', f'{self.numerology}',
@@ -263,6 +263,8 @@ class Ran:
                 '--ue-fo-compensation',
                 '--if_freq', f'{self.if_freq}',
                 '--uicc0.nssai_sd', '0']
+        if self.mode != 'sa':
+            args += [f'--{self.mode}']
         if self.args.type == 'phy-test':
             args += ['--phy-test']
         if self.args.rfsim > 0:
