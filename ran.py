@@ -199,6 +199,8 @@ class Ran:
         if self.args.gdb > 0:
             # gdb override numa
             pre_path += ['gdb', '--args']
+        if self.args.cores:
+            pre_path += ['taskset', '-ca', self.args.cores]
         executable = [f'{OAI_PATH}cmake_targets/ran_build/build/nr-softmodem']
         oai_args = ['-O', f'{self.config_file}', '--usrp-tx-thread-config', '1']
         if self.prb >= 106 and self.numerology == 1:

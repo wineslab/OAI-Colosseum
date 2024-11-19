@@ -38,7 +38,7 @@ done < "$config_file"
 
 script_cmd=""
 if [ "$mode_type" == "gnb" ]; then
-    script_cmd="auto-test.py -T gnb"
+    script_cmd="auto-test.py -T gnb --cores 0-45"
     if [ -z ${oai_extra_args+x} ]; then :; else script_cmd+=" --oai_extra_args="${oai_extra_args}; fi
 elif [ "$mode_type" == "ue" ]; then
     script_cmd="auto-test.py -T ue -t ${iperf_duration} --iperf_protocol ${iperf_protocol} -D ${dl_iperf_rate} -U ${ul_iperf_rate}"
