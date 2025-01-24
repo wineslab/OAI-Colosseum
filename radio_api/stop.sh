@@ -26,6 +26,7 @@ if [ "$mode_type" == "ue" ]; then
 elif [ "$mode_type" == "gnb" ]; then
   systemctl stop oai_ran.service
   cp /root/last_log /logs/nr-gnb.log
+  cp /root/openairinterface5g/cmake_targets/ran_build/build/*.log /logs/ 2> /dev/null
 elif [ "$mode_type" == "core" ]; then
   systemctl stop oai_5gc.service
   cp /root/iperf-core-server-ue-* /logs/

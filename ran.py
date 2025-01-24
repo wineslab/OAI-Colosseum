@@ -77,6 +77,11 @@ class Ran:
         if args.timing_advance is not None:
             self.conf["timing_advance"] = args.timing_advance
 
+        # get extra args
+        self.oai_extra_args = []
+        if self.args.oai_extra_args:
+            self.oai_extra_args = self.args.oai_extra_args.split(' ')
+
         self.set_ips()
         try:
             os.remove('/root/last_log')
@@ -194,6 +199,8 @@ class Ran:
         if self.args.gdb > 0:
             # gdb override numa
             pre_path += ['gdb', '--args']
+        if self.args.cores:
+            pre_path += ['taskset', '-ca', self.args.cores]
         executable = [f'{OAI_PATH}cmake_targets/ran_build/build/nr-softmodem']
         oai_args = ['-O', f'{self.config_file}', '--usrp-tx-thread-config', '1']
         if self.prb >= 106 and self.numerology == 1:
@@ -229,8 +236,13 @@ class Ran:
         oai_args += ['--T_stdout', '2',
                      '--gNBs.[0].do_SRS', '0']
 
+        # Add any additional extra args passed
+        if self.oai_extra_args:
+            oai_args += self.oai_extra_args
+
         # Set F1 parameters
         oai_args += f1_cmd_args
+
         self.cmd_stored = pre_path + executable + oai_args
         if self.execute:
             command_to_run = f"""{' '.join(self.cmd_stored)}  2>&1 | tee ~/mylogs/gNB-$(date +"%m%d%H%M").log | tee ~/last_log"""

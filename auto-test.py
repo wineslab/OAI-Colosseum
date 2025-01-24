@@ -374,8 +374,13 @@ if __name__ == '__main__':
     parser.add_argument('--timing_advance',
                         type=int,
                         help='Timing advance. Only used at UE-side. Overrides timing advance of base configuration')
+    parser.add_argument('--cores',
+                        default='',
+                        type=str,
+                        help='Cores to force OAI gNB on, e.g., 0-45')
     parser.add_argument('--tqsample', default=True, action='store_true', help='use 3/4 of sampling rate in USRP')
     parser.add_argument('--flash', '-f', default=False, action='store_true')
+    parser.add_argument('--oai_extra_args', type=str, default='', help='Extra args to pass to OAI')
     args = parser.parse_args()
     args.f1_remote_node = '0.0.0.0'
     args.if_freq = 0

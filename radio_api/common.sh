@@ -30,6 +30,7 @@ while IFS='=' read -r key value || [[ -n "$line" ]]; do
             "timing_advance") timing_advance="$value" ;;
             "start_dapp") start_dapp="$value" ;;
             "dapp_args") dapp_args="$value" ;;
+            "oai_extra_args") oai_extra_args="$value" ;;
             # Add more cases for other keys as needed
         esac
     fi
@@ -37,16 +38,17 @@ done < "$config_file"
 
 script_cmd=""
 if [ "$mode_type" == "gnb" ]; then
-    script_cmd="auto-test.py -T gnb"
+    script_cmd="auto-test.py -T gnb --cores 0-45"
+    if [ -z ${oai_extra_args+x} ]; then :; else script_cmd+=" --oai_extra_args="${oai_extra_args}; fi
 elif [ "$mode_type" == "ue" ]; then
     script_cmd="auto-test.py -T ue -t ${iperf_duration} --iperf_protocol ${iperf_protocol} -D ${dl_iperf_rate} -U ${ul_iperf_rate}"
     if [ -z ${timing_advance+x} ]; then :; else script_cmd=${script_cmd}" --timing_advance ${timing_advance}"; fi
-    echo ${script_cmd}
-    # script_cmd="auto-test.py -T ue -t ${iperf_duration}"
 elif [ "$mode_type" == "core" ]; then
     script_cmd="auto-test.py -T core-nw"
 else
     echo "Invalid config file option ${mode_type}." >> /logs/run.log
     exit 1
 fi
+
+echo ${script_cmd}
 
