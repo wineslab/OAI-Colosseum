@@ -77,6 +77,7 @@ class Ran:
         if args.timing_advance is not None:
             self.conf["timing_advance"] = args.timing_advance
 
+        self.near_rt_ric_ip = args.near_rt_ric_ip
         self.set_ips()
         try:
             os.remove('/root/last_log')
@@ -228,6 +229,10 @@ class Ran:
                      '--gNBs.[0].NETWORK_INTERFACES.GNB_INTERFACE_NAME_FOR_NGU', f'{local_dev}',
                      '--gNBs.[0].NETWORK_INTERFACES.GNB_IPV4_ADDRESS_FOR_NG_AMF', f'{local_ip}',
                      '--gNBs.[0].NETWORK_INTERFACES.GNB_IPV4_ADDRESS_FOR_FOR_NGU', f'{local_ip}']
+
+        # Set Near-RT RIC parameters
+        if self.near_rt_ric_ip:
+            oai_args += ['--e2_agent.near_ric_ip_addr', f'{self.near_rt_ric_ip}']
 
         # Set F1 parameters
         oai_args += f1_cmd_args

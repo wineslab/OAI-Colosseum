@@ -377,6 +377,9 @@ if __name__ == '__main__':
     parser.add_argument('--timing_advance',
                         type=int,
                         help='Timing advance. Only used at UE-side. Overrides timing advance of base configuration')
+    parser.add_argument('--near_rt_ric_ip',
+                        type=str,
+                        help='IP address of Near-RT RIC to connect to using FlexRIC agent')
     parser.add_argument('--tqsample', default=True, action='store_true', help='use 3/4 of sampling rate in USRP')
     parser.add_argument('--flash', '-f', default=False, action='store_true')
     args = parser.parse_args()
