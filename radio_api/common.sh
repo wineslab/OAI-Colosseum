@@ -36,7 +36,18 @@ done < "$config_file"
 
 script_cmd=""
 if [ "$mode_type" == "gnb" ]; then
-    script_cmd="auto-test.py -T gnb --near_rt_ric_ip ${near_rt_ric_ip}"
+    if [ -z ${near_rt_ric_ip+x} ]; then
+        script_cmd="auto-test.py -T gnb"
+    else
+        # check if ric ip is reachable or if we need to setup route to it
+        ping -c 1 ${near_rt_ric_ip}
+        if [ $? -ne 0 ]; then
+          echo "Setting route to Near-RT RIC"
+          first_three_ip_octects=$(ip addr show can0 | grep -oE 'inet [0-9\.]+/[0-9]+' | awk '{print $2}' | cut -d '/' -f 1 | awk -F'.' '{print $1"."$2"."$3}')
+          route add ${near_rt_ric_ip}/32 gw ${first_three_ip_octects}.1 dev can0
+        fi
+        script_cmd="auto-test.py -T gnb --near_rt_ric_ip ${near_rt_ric_ip}"
+    fi
 elif [ "$mode_type" == "ue" ]; then
     script_cmd="auto-test.py -T ue -t ${iperf_duration} --iperf_protocol ${iperf_protocol} -D ${dl_iperf_rate} -U ${ul_iperf_rate}"
     if [ -z ${timing_advance+x} ]; then :; else script_cmd=${script_cmd}" --timing_advance ${timing_advance}"; fi
