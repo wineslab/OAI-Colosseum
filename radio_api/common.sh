@@ -28,6 +28,7 @@ while IFS='=' read -r key value || [[ -n "$line" ]]; do
             "iperf_duration") iperf_duration="$value" ;;
             "iperf_protocol") iperf_protocol="$value" ;;
             "timing_advance") timing_advance="$value" ;;
+            "near_rt_ric_ip") near_rt_ric_ip="$value" ;;
             # Add more cases for other keys as needed
         esac
     fi
@@ -35,7 +36,7 @@ done < "$config_file"
 
 script_cmd=""
 if [ "$mode_type" == "gnb" ]; then
-    script_cmd="auto-test.py -T gnb"
+    script_cmd="auto-test.py -T gnb --near_rt_ric_ip ${near_rt_ric_ip}"
 elif [ "$mode_type" == "ue" ]; then
     script_cmd="auto-test.py -T ue -t ${iperf_duration} --iperf_protocol ${iperf_protocol} -D ${dl_iperf_rate} -U ${ul_iperf_rate}"
     if [ -z ${timing_advance+x} ]; then :; else script_cmd=${script_cmd}" --timing_advance ${timing_advance}"; fi
