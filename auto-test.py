@@ -374,14 +374,15 @@ if __name__ == '__main__':
                         type=str,
                         choices=['tcp', 'udp'],
                         help='Type of iPerf test to run')
+    parser.add_argument('--tqsample', default=True, action='store_true', help='use 3/4 of sampling rate in USRP')
+    parser.add_argument('--flash', '-f', default=False, action='store_true')
     parser.add_argument('--timing_advance',
                         type=int,
                         help='Timing advance. Only used at UE-side. Overrides timing advance of base configuration')
     parser.add_argument('--near_rt_ric_ip',
                         type=str,
                         help='IP address of Near-RT RIC to connect to using FlexRIC agent')
-    parser.add_argument('--tqsample', default=True, action='store_true', help='use 3/4 of sampling rate in USRP')
-    parser.add_argument('--flash', '-f', default=False, action='store_true')
+
     args = parser.parse_args()
     args.f1_remote_node = '0.0.0.0'
     args.if_freq = 0
