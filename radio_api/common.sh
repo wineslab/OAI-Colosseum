@@ -29,6 +29,7 @@ while IFS='=' read -r key value || [[ -n "$line" ]]; do
             "iperf_protocol") iperf_protocol="$value" ;;
             "timing_advance") timing_advance="$value" ;;
             "near_rt_ric_ip") near_rt_ric_ip="$value" ;;
+            "gnb_id") gnb_id="$value" ;;
             # Add more cases for other keys as needed
         esac
     fi
@@ -46,7 +47,13 @@ if [ "$mode_type" == "gnb" ]; then
           first_three_ip_octects=$(ip addr show can0 | grep -oE 'inet [0-9\.]+/[0-9]+' | awk '{print $2}' | cut -d '/' -f 1 | awk -F'.' '{print $1"."$2"."$3}')
           route add ${near_rt_ric_ip}/32 gw ${first_three_ip_octects}.1 dev can0
         fi
-        script_cmd="auto-test.py -T gnb --near_rt_ric_ip ${near_rt_ric_ip}"
+
+        if [ -z ${gnb_id+x} ]; then
+            script_cmd="auto-test.py -T gnb --near_rt_ric_ip ${near_rt_ric_ip}"
+        else
+            echo "Setting gNB ID to "${gnb_id}
+            script_cmd="auto-test.py -T gnb --gnb_id ${gnb_id} --near_rt_ric_ip ${near_rt_ric_ip}"
+        fi
     fi
 elif [ "$mode_type" == "ue" ]; then
     script_cmd="auto-test.py -T ue -t ${iperf_duration} --iperf_protocol ${iperf_protocol} -D ${dl_iperf_rate} -U ${ul_iperf_rate}"

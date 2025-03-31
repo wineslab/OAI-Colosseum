@@ -79,6 +79,10 @@ class Ran:
 
         self.near_rt_ric_ip = args.near_rt_ric_ip
         self.set_ips()
+
+        if args.gnb_id:
+            self.node_id = args.gnb_id
+
         try:
             os.remove('/root/last_log')
         except:
@@ -335,6 +339,9 @@ if __name__ == '__main__':
     parser.add_argument('--near_rt_ric_ip',
                         type=str,
                         help='IP address of Near-RT RIC to connect to using FlexRIC agent')
+    parser.add_argument('--gnb_id',
+                        default='',
+                        type=str)
 
     args = parser.parse_args()
     r = Ran(args)

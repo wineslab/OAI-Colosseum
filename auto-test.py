@@ -382,6 +382,9 @@ if __name__ == '__main__':
     parser.add_argument('--near_rt_ric_ip',
                         type=str,
                         help='IP address of Near-RT RIC to connect to using FlexRIC agent')
+    parser.add_argument('--gnb_id',
+                        default='',
+                        type=str)
 
     args = parser.parse_args()
     args.f1_remote_node = '0.0.0.0'
