@@ -31,7 +31,7 @@ else
   echo "[`date`] Starting 5G ${mode_type} service from start.sh" >> /logs/run.log
   echo "[`date`] Command line ${script_cmd}" >> /logs/run.log
   cd ${APP_DIR}
-  python3 ${APP_DIR}/${script_cmd}
+  python3 ${APP_DIR}/${script_cmd} 2> /logs/python_error.log
 fi
 
 exit 0
