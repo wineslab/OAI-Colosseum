@@ -334,6 +334,8 @@ if __name__ == '__main__':
     log_filename = os.path.basename(__file__).replace('.py', '.log')
     set_logger(log_filename)
 
+    logging.info("Starting Python autotest script")
+
     parser = argparse.ArgumentParser(description='Parameters to run tests')
     parser.add_argument('-T', '--type',
                         required=True,
