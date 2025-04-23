@@ -77,16 +77,23 @@ class Ran:
         if args.timing_advance is not None:
             self.conf["timing_advance"] = args.timing_advance
 
+        logging.info('Setting Near-RT RIC IP')
         self.near_rt_ric_ip = args.near_rt_ric_ip
+        logging.info('Near-RT RIC IP set')
         self.set_ips()
+        logging.info('IP addresses set')
 
         if args.gnb_id:
             self.node_id = args.gnb_id
 
         try:
             os.remove('/root/last_log')
-        except:
+        except OSError as e:
+            logging.warning('Caught OSError exception: {}'.format(e))
             pass
+
+        logging.info('Ended RAN setup')
+
 
     def set_config_file(self, f1_type, local_ip, local_dev):
         os.system(f"cp {BASE_CONF} {self.config_file}")
@@ -160,6 +167,7 @@ class Ran:
             self.if_freq = 0
 
     def set_ips(self):
+        logging.info('Calling set_ips')
         self.main_ip = os.popen(f"ip -f inet addr show {MAIN_DEV} | grep -Po 'inet \K[\d.]+'").read().strip()
         self.iab_ip = os.popen(f"ip -f inet addr show {IAB_DEV} | grep -Po 'inet \K[\d.]+'").read().strip()
         self.node_id = self.main_ip.split('.')[3]
@@ -337,6 +345,7 @@ if __name__ == '__main__':
                         type=int,
                         help='Timing advance. Only used at UE-side. Overrides timing advance of base configuration')
     parser.add_argument('--near_rt_ric_ip',
+                        default='',
                         type=str,
                         help='IP address of Near-RT RIC to connect to using FlexRIC agent')
     parser.add_argument('--gnb_id',

@@ -315,6 +315,7 @@ def run_UE_test(args):
     stop_and_kill_subp(ueProcess)
 
 def run_gnb_test(args):
+    logging.info('Starting run_gnb_test')
     args.mode = 'sa'
     args.type = 'donor'
     gnb = Ran(args)
@@ -322,11 +323,12 @@ def run_gnb_test(args):
     gnb.run()
     logging.info(gnb.cmd_stored)
     output_file = open('/root/last_log', "w")
-    p = subprocess.Popen(gnb.cmd_stored, stdout=output_file, stderr=subprocess.STDOUT)
+    error_file = open('/logs/gnb_error_log', "w")
+    p = subprocess.Popen(gnb.cmd_stored, stdout=output_file, stderr=error_file)
     while True:
         if p.poll() is not None:
             logging.info("gNB process ended. Restarting it.")
-            p = subprocess.Popen(gnb.cmd_stored, stdout=output_file, stderr=subprocess.STDOUT)
+            p = subprocess.Popen(gnb.cmd_stored, stdout=output_file, stderr=error_file)
         time.sleep(5)
 
 if __name__ == '__main__':
@@ -382,6 +384,7 @@ if __name__ == '__main__':
                         type=int,
                         help='Timing advance. Only used at UE-side. Overrides timing advance of base configuration')
     parser.add_argument('--near_rt_ric_ip',
+                        default='',
                         type=str,
                         help='IP address of Near-RT RIC to connect to using FlexRIC agent')
     parser.add_argument('--gnb_id',
