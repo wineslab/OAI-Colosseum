@@ -16,6 +16,8 @@ import os
 import getopt
 import sys
 import subprocess
+import threading
+import time
 
 
 def long2net(arg):
@@ -35,16 +37,76 @@ def to_CIDR_notation(bytes_network, bytes_netmask):
     return net
 
 
-def scan_and_print_neighbors(net, interface, timeout=30):
+def improved_arping(net, iface=None, timeout=2, verbose=False, retry=2):
+    """
+    Improved ARP ping function that won't hang indefinitely
+
+    Parameters:
+    -----------
+    net : str
+        Network to scan (e.g., "192.168.1.0/24")
+    iface : str, optional
+        Network interface to use
+    timeout : int, optional
+        Timeout in seconds (default: 2)
+    verbose : bool, optional
+        Whether to print verbose output (default: False)
+    retry : int, optional
+        Number of retries (default: 2)
+
+    Returns:
+    --------
+    tuple
+        (answered packets, unanswered packets)
+    """
+
+    # Define result container
+    result = [None]
+
+    # Define the target function
+    def target_func():
+        try:
+            result[0] = scapy.layers.l2.arping(
+                net, iface=iface, timeout=timeout, verbose=verbose
+            )
+        except Exception as e:
+            result[0] = ([], [])
+            if verbose:
+                print(f"Error in arping: {e}")
+
+    # Create and start thread
+    thread = threading.Thread(target=target_func)
+    thread.daemon = True
+    thread.start()
+
+    # Wait for thread to complete or timeout
+    max_wait = timeout * retry
+    start_time = time.time()
+
+    while thread.is_alive() and time.time() - start_time < max_wait:
+        time.sleep(0.1)
+
+    if thread.is_alive():
+        if verbose:
+            print(f"ARP scan timed out after {max_wait} seconds")
+        return [], []
+
+    # Return the results
+    if result[0] is None:
+        return [], []
+    return result[0]
+
+
+def scan_and_print_neighbors(net, interface, timeout=5):
     logging.info('Calling scan_and_print_neighbors function')
     output_scan_and_print = open('/logs/scan_print_output.log', "a")
     error_scan_and_print = open('/logs/scan_print_error.log', "a")
     try:
-        ans, unans = scapy.layers.l2.arping(net, iface=interface, timeout=timeout, verbose=False)
+        # ans, unans = scapy.layers.l2.arping(net, iface=interface, timeout=timeout, verbose=False)
+        ans, unans = improved_arping(net, iface=interface, timeout=timeout, verbose=False, retry=2)
         logging.info('Got ans: {}'.format(ans.res))
         logging.info('Got unans: {}'.format(unans.res))
         for s, r in ans.res:
-            line = r.sprintf("%ARP.psrc%")
             line = r.sprintf("%ARP.psrc%")
             logging.info(line)
             command = ['route', 'add', '-net', '192.168.70.128/26', 'gw', line, 'dev', 'col0']
