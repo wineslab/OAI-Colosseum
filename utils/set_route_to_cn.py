@@ -36,17 +36,22 @@ def to_CIDR_notation(bytes_network, bytes_netmask):
 
 
 def scan_and_print_neighbors(net, interface, timeout=5):
+    logging.info('Calling scan_and_print_neighbors function')
+    output_scan_and_print = open('/logs/scan_print_output.log', "a")
+    error_scan_and_print = open('/logs/scan_print_error.log', "a")
     try:
         ans, unans = scapy.layers.l2.arping(net, iface=interface, timeout=timeout, verbose=False)
+        logging.info('Got ans: {}'.format(ans))
+        logging.info('Got unans: {}'.format(unans))
         for s, r in ans.res:
             line = r.sprintf("%ARP.psrc%")
             line = r.sprintf("%ARP.psrc%")
-            # logging.info(line)
+            logging.info(line)
             command = ['route', 'add', '-net', '192.168.70.128/26', 'gw', line, 'dev', 'col0']
-            response = subprocess.run(args=command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode
+            response = subprocess.run(args=command, stdout=output_scan_and_print, stderr=error_scan_and_print).returncode
             command = ['ping', '-c', '1', '-t', '1', '192.168.70.129']
-            response = subprocess.run(args=command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode
-            #logging.info("For host %s response is %s" % (line, response))
+            response = subprocess.run(args=command, stdout=output_scan_and_print, stderr=error_scan_and_print).returncode
+            logging.info("For host %s response is %s" % (line, response))
             if response == 0:
                 logging.info("IP address of host running CN is %s" % line)
                 break
@@ -54,11 +59,15 @@ def scan_and_print_neighbors(net, interface, timeout=5):
                 os.system("route del -net 192.168.70.128/26")
             try:
                 hostname = socket.gethostbyaddr(r.psrc)
+                logging.info('Got hostname {}'.format(hostname))
                 line += " " + hostname[0]
-            except socket.herror:
+                logging.info('Got line {}'.format(line))
+            except socket.herror as he:
                 # failed to resolve
+                logging.error('Got error: {}'.format(he))
                 pass
     except socket.error as e:
+        logging.error('Got error: {}'.format(e))
         if e.errno == errno.EPERM:     # Operation not permitted
             logging.error("%s. Did you run as root?", e.strerror)
         else:
@@ -67,8 +76,8 @@ def scan_and_print_neighbors(net, interface, timeout=5):
 
 def main(interface_to_scan=None):
     logging.info('Calling function to set route to CN')
-    output_file_cn_route = open('/logs/cn_route_output_log', "w")
-    error_file_cn_route = open('/logs/cn_route_error_log', "w")
+    output_file_cn_route = open('/logs/cn_route_output.log', "a")
+    error_file_cn_route = open('/logs/cn_route_error.log', "a")
     if os.geteuid() != 0:
         logging.error('You need to be root to run this script')
         sys.exit(1)
@@ -85,7 +94,7 @@ def main(interface_to_scan=None):
             continue
 
         if netmask <= 0 or netmask == 0xFFFFFFFF:
-            logging.warning('Skipping interface because of netmask {}'.format(netmask))
+            logging.warning('Skipping interface {} because of netmask {}'.format(interface, netmask))
             continue
 
         # skip docker interface
@@ -96,6 +105,7 @@ def main(interface_to_scan=None):
             logging.warning("Skipping interface '%s'" % interface)
             continue
 
+        logging.info('Using interface {}'.format(interface))
         logging.info('Before calling to_CIDR_notation')
         net = to_CIDR_notation(network, netmask)
         logging.info('After calling to_CIDR_notation')
