@@ -66,20 +66,26 @@ def scan_and_print_neighbors(net, interface, timeout=5):
 
 
 def main(interface_to_scan=None):
+    logging.info('Calling function to set route to CN')
+    output_file_cn_route = open('/logs/cn_route_output_log', "w")
+    error_file_cn_route = open('/logs/cn_route_error_log', "w")
     if os.geteuid() != 0:
-        print('You need to be root to run this script', file=sys.stderr)
+        logging.error('You need to be root to run this script')
         sys.exit(1)
 
     for network, netmask, _, interface, address, _ in scapy.config.conf.route.routes:
 
         if interface_to_scan and interface_to_scan != interface:
+            logging.warning('Skipping interface {}'.format(interface))
             continue
 
         # skip loopback network and default gw
         if network == 0 or interface == 'lo' or address == '127.0.0.1' or address == '0.0.0.0':
+            logging.warning('Skipping interface {}'.format(interface))
             continue
 
         if netmask <= 0 or netmask == 0xFFFFFFFF:
+            logging.warning('Skipping interface because of netmask {}'.format(netmask))
             continue
 
         # skip docker interface
@@ -90,24 +96,31 @@ def main(interface_to_scan=None):
             logging.warning("Skipping interface '%s'" % interface)
             continue
 
+        logging.info('Before calling to_CIDR_notation')
         net = to_CIDR_notation(network, netmask)
+        logging.info('After calling to_CIDR_notation')
+        logging.info('Got net {}'.format(net))
 
         if net:
             found = False
             command = ['ping', '-c', '1', '-t', '1', '192.168.70.129']
-            response = subprocess.run(args=command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode
+            response = subprocess.run(args=command, stdout=output_file_cn_route, stderr=error_file_cn_route).returncode
+            logging.info('Got response from ping: {}'.format(response))
             if response == 0:
                 logging.info("Route to CN host exists!")
                 found = True
             else:
                 command = ['route', 'del', '-net', '192.168.70.128/26']
-                subprocess.run(args=command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode
+                subprocess.run(args=command, stdout=output_file_cn_route, stderr=error_file_cn_route).returncode
                 found = False
+
             while not found:
+                logging.info('Before calling scan_and_print_neighbors')
                 scan_and_print_neighbors(net, interface)
+                logging.info('After calling scan_and_print_neighbors')
                 command = ['ping', '-c', '1', '-t', '1', '192.168.70.129']
-                found = (subprocess.run(args=command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode) == 0
-                #logging.info("Found is %s" % found)
+                found = (subprocess.run(args=command, stdout=output_file_cn_route, stderr=error_file_cn_route).returncode) == 0
+                logging.info("Found is %s" % found)
                 if found:
                     logging.info("Route to core network added!")
                 else:

@@ -196,8 +196,8 @@ class Ran:
         if type != 'relay':
             local_ip = self.main_ip
             local_dev = MAIN_DEV
-            logging.info('About to set route to CN')
-            set_route(MAIN_DEV)
+            logging.info('About to set route to CN via device {}'.format(local_dev))
+            set_route(local_dev)
             logging.info('Route to CN set')
         else:
             local_ip = self.iab_ip
