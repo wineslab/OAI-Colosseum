@@ -92,7 +92,7 @@ class Ran:
             logging.warning('Caught OSError exception: {}'.format(e))
             pass
 
-        logging.info('Ended RAN setup')
+        logging.info('Ended RAN initialization')
 
 
     def set_config_file(self, f1_type, local_ip, local_dev):
@@ -173,6 +173,7 @@ class Ran:
         self.node_id = self.main_ip.split('.')[3]
 
     def run(self):
+        logging.info('Calling run function with type {}'.format(self.type))
         if self.args.flash:
             flash_x310()
             time.sleep(5)
@@ -191,15 +192,20 @@ class Ran:
             exit(0)
 
     def run_gnb(self, type):
+        logging.info('Calling run_gnb function')
         if type != 'relay':
             local_ip = self.main_ip
             local_dev = MAIN_DEV
+            logging.info('About to set route to CN')
             set_route(MAIN_DEV)
+            logging.info('Route to CN set')
         else:
             local_ip = self.iab_ip
             local_dev = IAB_DEV
         f1_cmd_args = self.set_config_file(type, local_ip, local_dev)
+        logging.info('About to call get_locationandbandwidth')
         LABW = get_locationandbandwidth(self.prb)
+        logging.info('get_locationandbandwidth called')
         pre_path = []
         if self.args.numa > 0:
             # pre_path += ['numactl', f'--cpunodebind=netdev:{USRP_DEV}', f'--membind=netdev:{USRP_DEV}']
@@ -249,7 +255,13 @@ class Ran:
         # Set F1 parameters
         oai_args += f1_cmd_args
         self.cmd_stored = pre_path + executable + oai_args
+
+        logging.info('Pre path is {}'.format(pre_path))
+        logging.info('Executable is {}'.format(executable))
+        logging.info('OAI args are {}'.format(oai_args))
+        logging.info('Command stored is: {}'.format(self.cmd_stored))
         if self.execute:
+            logging.info('Inside self.execute bracket')
             command_to_run = f"""{' '.join(self.cmd_stored)}  2>&1 | tee ~/mylogs/gNB-$(date +"%m%d%H%M").log | tee ~/last_log"""
             logging.info(command_to_run)
             os.system(command_to_run)

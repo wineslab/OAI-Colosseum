@@ -315,7 +315,7 @@ def run_UE_test(args):
     stop_and_kill_subp(ueProcess)
 
 def run_gnb_test(args):
-    logging.info('Starting run_gnb_test')
+    logging.info('Calling run_gnb_test function')
     args.mode = 'sa'
     args.type = 'donor'
     gnb = Ran(args)
