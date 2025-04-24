@@ -71,8 +71,7 @@ def improved_arping(net, iface=None, timeout=2, verbose=False, retry=2):
             )
         except Exception as e:
             result[0] = ([], [])
-            if verbose:
-                print(f"Error in arping: {e}")
+            logging.error(f"Error in arping: {e}")
 
     # Create and start thread
     thread = threading.Thread(target=target_func)
@@ -87,12 +86,12 @@ def improved_arping(net, iface=None, timeout=2, verbose=False, retry=2):
         time.sleep(0.1)
 
     if thread.is_alive():
-        if verbose:
-            print(f"ARP scan timed out after {max_wait} seconds")
+        logging.warning(f"ARP scan timed out after {max_wait} seconds")
         return [], []
 
     # Return the results
     if result[0] is None:
+        logging.warning('Non results returned by arping')
         return [], []
     return result[0]
 
@@ -102,8 +101,10 @@ def scan_and_print_neighbors(net, interface, timeout=5):
     output_scan_and_print = open('/logs/scan_print_output.log', "a")
     error_scan_and_print = open('/logs/scan_print_error.log', "a")
     try:
+        logging.info('About to send ARP requests')
         # ans, unans = scapy.layers.l2.arping(net, iface=interface, timeout=timeout, verbose=False)
         ans, unans = improved_arping(net, iface=interface, timeout=timeout, verbose=False, retry=2)
+        logging.info('ARP requests sent')
         logging.info('Got ans: {}'.format(ans.res))
         logging.info('Got unans: {}'.format(unans.res))
         for s, r in ans.res:
