@@ -103,7 +103,7 @@ def scan_and_print_neighbors(net, interface, timeout=5):
     try:
         logging.info('About to send ARP requests')
         # ans, unans = scapy.layers.l2.arping(net, iface=interface, timeout=timeout, verbose=False)
-        ans, unans = improved_arping(net, iface=interface, timeout=timeout, verbose=False, retry=2)
+        ans, unans = improved_arping(net, iface=interface, timeout=timeout, verbose=True, retry=2)
         logging.info('ARP requests sent')
         logging.info('Got ans: {}'.format(ans.res))
         logging.info('Got unans: {}'.format(unans.res))
@@ -176,16 +176,17 @@ def main(interface_to_scan=None):
 
         if net:
             found = False
-            command = ['ping', '-c', '1', '-t', '1', '192.168.70.129']
-            response = subprocess.run(args=command, stdout=output_file_cn_route, stderr=error_file_cn_route).returncode
-            logging.info('Got response from ping: {}'.format(response))
-            if response == 0:
-                logging.info("Route to CN host exists!")
-                found = True
-            else:
-                command = ['route', 'del', '-net', '192.168.70.128/26']
-                subprocess.run(args=command, stdout=output_file_cn_route, stderr=error_file_cn_route).returncode
-                found = False
+            # temporarily commenting to debug ARP
+            # command = ['ping', '-c', '1', '-t', '1', '192.168.70.129']
+            # response = subprocess.run(args=command, stdout=output_file_cn_route, stderr=error_file_cn_route).returncode
+            # logging.info('Got response from ping: {}'.format(response))
+            # if response == 0:
+            #     logging.info("Route to CN host exists!")
+            #     found = True
+            # else:
+            #     command = ['route', 'del', '-net', '192.168.70.128/26']
+            #     subprocess.run(args=command, stdout=output_file_cn_route, stderr=error_file_cn_route).returncode
+            #     found = False
 
             while not found:
                 logging.info('Before calling scan_and_print_neighbors')
