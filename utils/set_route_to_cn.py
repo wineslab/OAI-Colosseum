@@ -35,14 +35,14 @@ def to_CIDR_notation(bytes_network, bytes_netmask):
     return net
 
 
-def scan_and_print_neighbors(net, interface, timeout=5):
+def scan_and_print_neighbors(net, interface, timeout=30):
     logging.info('Calling scan_and_print_neighbors function')
     output_scan_and_print = open('/logs/scan_print_output.log', "a")
     error_scan_and_print = open('/logs/scan_print_error.log', "a")
     try:
         ans, unans = scapy.layers.l2.arping(net, iface=interface, timeout=timeout, verbose=False)
-        logging.info('Got ans: {}'.format(ans))
-        logging.info('Got unans: {}'.format(unans))
+        logging.info('Got ans: {}'.format(ans.res))
+        logging.info('Got unans: {}'.format(unans.res))
         for s, r in ans.res:
             line = r.sprintf("%ARP.psrc%")
             line = r.sprintf("%ARP.psrc%")
@@ -64,7 +64,7 @@ def scan_and_print_neighbors(net, interface, timeout=5):
                 logging.info('Got line {}'.format(line))
             except socket.herror as he:
                 # failed to resolve
-                logging.error('Got error: {}'.format(he))
+                logging.warning('Passing on error: {}'.format(he))
                 pass
     except socket.error as e:
         logging.error('Got error: {}'.format(e))

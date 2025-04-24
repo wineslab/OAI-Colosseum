@@ -89,7 +89,7 @@ class Ran:
         try:
             os.remove('/root/last_log')
         except OSError as e:
-            logging.warning('Caught OSError exception: {}'.format(e))
+            logging.warning('Passing on error: {}'.format(e))
             pass
 
         logging.info('Ended RAN initialization')
