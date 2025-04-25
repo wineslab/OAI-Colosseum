@@ -137,8 +137,8 @@ class Ran:
                      '--RUs.[0].max_rxgain', '114',
                      '--RUs.[0].eNB_instances', '[0]',
                      '--RUs.[0].bf_weights', '[0x00007fff, 0x0000, 0x0000, 0x0000]',
-                     '--RUs.[0].clock_src', 'external',
-                     '--RUs.[0].time_src', 'external',
+                     '--RUs.[0].clock_src', 'internal',
+                     '--RUs.[0].time_src', 'internal',
                      '--RUs.[0].sdr_addrs', f'addr={USRP_ADDR}',
                      '--RUs.[0].if_freq', f'{self.if_freq}']
             args += ['--THREAD_STRUCT.[0].parallel_config', 'PARALLEL_SINGLE_THREAD',
@@ -287,8 +287,8 @@ class Ran:
                 '-C', f'{self.ssb_frequency}',
                 '--ue-txgain', '0',
                 '-A', f'{self.conf["timing_advance"]}',
-                '--clock-source', '1',
-                '--time-source', '1',
+                '--clock-source', '0',
+                '--time-source', '0',
                 '--ue-fo-compensation',
                 '--if_freq', f'{self.if_freq}',
                 '--uicc0.nssai_sd', '0']

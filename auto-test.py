@@ -323,7 +323,7 @@ def run_gnb_test(args):
     gnb.run()
     logging.info(gnb.cmd_stored)
     output_file = open('/root/last_log', "w")
-    error_file = open('/logs/gnb_error_log', "a")
+    error_file = open('/logs/gnb_error.log', "a")
     p = subprocess.Popen(gnb.cmd_stored, stdout=output_file, stderr=error_file)
     while True:
         if p.poll() is not None:
