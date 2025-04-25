@@ -240,17 +240,16 @@ def main(interface_to_scan=None):
 
         if net:
             found = False
-            # temporarily commenting to debug ARP
-            # command = ['ping', '-c', '1', '-t', '1', '192.168.70.129']
-            # response = subprocess.run(args=command, stdout=output_file_cn_route, stderr=error_file_cn_route).returncode
-            # logging.info('Got response from ping: {}'.format(response))
-            # if response == 0:
-            #     logging.info("Route to CN host exists!")
-            #     found = True
-            # else:
-            #     command = ['route', 'del', '-net', '192.168.70.128/26']
-            #     subprocess.run(args=command, stdout=output_file_cn_route, stderr=error_file_cn_route).returncode
-            #     found = False
+            command = ['ping', '-c', '1', '-t', '1', '192.168.70.129']
+            response = subprocess.run(args=command, stdout=output_file_cn_route, stderr=error_file_cn_route).returncode
+            logging.info('Got response from ping: {}'.format(response))
+            if response == 0:
+                logging.info("Route to CN host exists!")
+                found = True
+            else:
+                command = ['route', 'del', '-net', '192.168.70.128/26']
+                subprocess.run(args=command, stdout=output_file_cn_route, stderr=error_file_cn_route).returncode
+                found = False
 
             while not found:
                 logging.info('Before calling scan_and_print_neighbors')
@@ -261,6 +260,7 @@ def main(interface_to_scan=None):
                 logging.info("Found is %s" % found)
                 if found:
                     logging.info("Route to core network added!")
+                    return
                 else:
                     logging.info("Route to core network not found. Retrying...")
 
