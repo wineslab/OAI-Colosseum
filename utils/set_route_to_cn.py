@@ -152,7 +152,7 @@ def get_active_nodes_nmap(net, iface, max_trials=10) -> list:
         if active_nodes:
             nmap_successful = True
 
-    print('nmap completed, found active nodes {}'.format(active_nodes))
+    logging.info('nmap completed, found active nodes {}'.format(active_nodes))
     return active_nodes
 
 
