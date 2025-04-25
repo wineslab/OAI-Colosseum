@@ -14,6 +14,7 @@ import math
 import errno
 import os
 import getopt
+import re
 import sys
 import subprocess
 import threading
@@ -96,6 +97,25 @@ def improved_arping(net, iface=None, timeout=2, verbose=False, retry=2):
     return result[0]
 
 
+def extract_ip_addresses(nmap_output):
+    """
+    Extract all IP addresses from nmap output.
+
+    Args:
+        nmap_output (str): The nmap output text
+
+    Returns:
+        list: List of IP addresses found in the output
+    """
+    # This regex pattern matches IPv4 addresses
+    ip_pattern = r'\b(?:\d{1,3}\.){3}\d{1,3}\b'
+
+    # Find all matches in the text
+    ip_addresses = re.findall(ip_pattern, nmap_output)
+
+    return ip_addresses
+
+
 def get_active_nodes_nmap(net, iface, max_trials=10) -> list:
 
     logging.info('Getting list of active nodes using nmap')
@@ -106,16 +126,7 @@ def get_active_nodes_nmap(net, iface, max_trials=10) -> list:
     # flag to check we found at least one node that is not SRN.
     # Otherwise nmap has to be repeated
     nmap_successful = False
-    re_runs = -1
-
-    nmap_host_keyword = 'Nmap scan report for '
-    nmap_up_keyword = 'Host is up'
-
-    # get net base IP: e.g., if net is 172.30.104.0/24, get 172.30.104.
-    net_last = net.split('.')[3]
-    net_base_ip = net[:-len(net_last)]
-    logging.info('net_last is {}'.format(net_last))
-    logging.info('net_base_ip is {}'.format(net_base_ip))
+    nmap_run = -1
 
     nmap_command = 'nmap -T4 -sn {}'.format(net)
     logging.info('nmap command is {}'.format(nmap_command))
@@ -123,45 +134,25 @@ def get_active_nodes_nmap(net, iface, max_trials=10) -> list:
     # list of active nodes IP addresses
     active_nodes = []
     while not nmap_successful:
-        # use a temporary list to store active nodes
-        tmp_nodes = []
+        nmap_run += 1
 
-        re_runs += 1
-
-        if re_runs > max_trials:
-            logging.error('No active hosts found by nmap. Returning empty list')
+        if nmap_run > max_trials:
+            logging.warning('No active hosts found by nmap. Returning empty list')
             return []
 
-        logging.info('Starting nmap')
+        logging.info('nmap run {}'.format(nmap_run))
         pipe = subprocess.Popen(nmap_command, shell=True, stdout=subprocess.PIPE).stdout
 
-        # separate lines returned by the above command
-        lines = pipe.read().decode("utf-8").splitlines()
+        lines = pipe.read().decode("utf-8")
+        logging.info('nmap output is {}'.format(lines))
+        nmap_ip = extract_ip_addresses(lines)
+        logging.info('IP addresses found by nmap: {}'.format(nmap_ip))
+        active_nodes = [x for x in nmap_ip if int(x.split('.')[-1]) > srn_offset]
 
-        for l_idx in range(len(lines)):
-            curr_line = lines[l_idx]
-            logging.info('curr_line is {}'.format(curr_line))
+        if active_nodes:
+            nmap_successful = True
 
-            # get SRN num from host IP
-            if nmap_host_keyword in curr_line and nmap_up_keyword in lines[l_idx + 1]:
-                srn_num = int(curr_line.split(col0_base_ip)[1]) - srn_offset
-
-                # check this is an actual SRN and add it to dictionary
-                if srn_num > 0:
-                    tmp_nodes.append(curr_line)
-                    logging.info('SRN with IP {} is active'.format(curr_line))
-                else:
-                    # this is not an SRN but is used to check that nmap is successful
-                    logging.info('nmap successful')
-                    nmap_successful = True
-
-    if len(tmp_nodes) > 0:
-        active_nodes = tmp_nodes
-    else:
-        logging.error('No active hosts found by nmap. Exiting')
-        exit(1)
-
-    logging.info('nmap completed, found active nodes {}'.format(active_nodes))
+    print('nmap completed, found active nodes {}'.format(active_nodes))
     return active_nodes
 
 
