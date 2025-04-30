@@ -88,7 +88,7 @@ def run_and_check_conn_established(command_to_run):
     status_file = '/tmp/NR_STATE'
 
     # Create a separate thread and run the UE in it
-    ueProcess = subprocess.Popen(command_to_run, stdout=output_file, stderr=subprocess.STDOUT)
+    ueProcess = subprocess.Popen(command_to_run, stdout=output_file, stderr=subprocess.STDOUT, start_new_session=True)
 
     time.sleep(5)
 
@@ -125,7 +125,7 @@ def start_core_iperf(imsi):
     output_file = open(output_filename, "w")
     iperfSrvCmd = ['iperf3', '-s', '-p', f'{port}']
     try:
-        iperfSrv = subprocess.Popen(iperfSrvCmd, stdout=output_file, stderr=subprocess.STDOUT)
+        iperfSrv = subprocess.Popen(iperfSrvCmd, stdout=output_file, stderr=subprocess.STDOUT, start_new_session=True)
     except Exception as e:
         logging.error("Error starting server")
         return None
@@ -134,7 +134,7 @@ def start_core_iperf(imsi):
 
 def scan_docker_logs_and_do_stuff(service_name):
     command = f"docker logs {service_name} -f"  # Use `-f` flag for continuous log streaming
-    dockerScanPocess = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    dockerScanPocess = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, start_new_session=True)
     signal.signal(signal.SIGINT, handle_sigint)
     new_context = "SMF CONTEXT:"
     get_imsi = "SUPI:"
@@ -201,7 +201,7 @@ def run_and_find_A(command_to_run, args):
 
       command_to_run.extend(['-A', f'{A}'])
       # Create a separate thread and run the UE in it
-      ueProcess = subprocess.Popen(command_to_run, stdout=output_file, stderr=subprocess.STDOUT)
+      ueProcess = subprocess.Popen(command_to_run, stdout=output_file, stderr=subprocess.STDOUT, start_new_session=True)
 
       time.sleep(5)
 
@@ -282,7 +282,7 @@ def run_UE_test(args):
                     iperfDLcmd = f'python3 /root/sierra-wireless-automated-testing/src/iperf/iperf_run.py --type {args.iperf_protocol} --udp_rate_mbps {iperf_target_rate_dl} --dir DL --duration {args.iperf_time} --save local --port 52{ue.node_id[1:]} --bind {ip_address}'.split()
 
                 try:
-                    iperfDL = subprocess.Popen(iperfDLcmd, stdout=output_file, stderr=subprocess.STDOUT)
+                    iperfDL = subprocess.Popen(iperfDLcmd, stdout=output_file, stderr=subprocess.STDOUT, start_new_session=True)
                 except Exception as e:
                     logging.error("Error starting DL iperf job")
                 iperfDL.wait()
@@ -301,7 +301,7 @@ def run_UE_test(args):
                     iperfULcmd = f'python3 /root/sierra-wireless-automated-testing/src/iperf/iperf_run.py --type {args.iperf_protocol} --udp_rate_mbps {iperf_target_rate_ul} --dir UL --duration {args.iperf_time} --save local --port 52{ue.node_id[1:]} --bind {ip_address}'.split()
 
                 try:
-                    iperfUL = subprocess.Popen(iperfULcmd, stdout=output_file, stderr=subprocess.STDOUT)
+                    iperfUL = subprocess.Popen(iperfULcmd, stdout=output_file, stderr=subprocess.STDOUT, start_new_session=True)
                 except Exception as e:
                     logging.error("Error starting UL iperf job")
                 iperfUL.wait()
@@ -323,11 +323,11 @@ def run_gnb_test(args):
     gnb.run()
     logging.info(gnb.cmd_stored)
     output_file = open('/root/last_log', "w")
-    p = subprocess.Popen(gnb.cmd_stored, stdout=output_file, stderr=subprocess.STDOUT)
+    p = subprocess.Popen(gnb.cmd_stored, stdout=output_file, stderr=subprocess.STDOUT, start_new_session=True)
     while True:
         if p.poll() is not None:
             logging.info("gNB process ended. Restarting it.")
-            p = subprocess.Popen(gnb.cmd_stored, stdout=output_file, stderr=subprocess.STDOUT)
+            p = subprocess.Popen(gnb.cmd_stored, stdout=output_file, stderr=subprocess.STDOUT, start_new_session=True)
         time.sleep(5)
 
 if __name__ == '__main__':
