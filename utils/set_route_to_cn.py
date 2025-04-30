@@ -17,8 +17,6 @@ import getopt
 import re
 import sys
 import subprocess
-import threading
-import time
 
 
 def long2net(arg):
@@ -36,65 +34,6 @@ def to_CIDR_notation(bytes_network, bytes_netmask):
         return None
 
     return net
-
-
-def improved_arping(net, iface=None, timeout=2, verbose=False, retry=2):
-    """
-    Improved ARP ping function that won't hang indefinitely
-
-    Parameters:
-    -----------
-    net : str
-        Network to scan (e.g., "192.168.1.0/24")
-    iface : str, optional
-        Network interface to use
-    timeout : int, optional
-        Timeout in seconds (default: 2)
-    verbose : bool, optional
-        Whether to print verbose output (default: False)
-    retry : int, optional
-        Number of retries (default: 2)
-
-    Returns:
-    --------
-    tuple
-        (answered packets, unanswered packets)
-    """
-
-    # Define result container
-    result = [None]
-
-    # Define the target function
-    def target_func():
-        try:
-            result[0] = scapy.layers.l2.arping(
-                net, iface=iface, timeout=timeout, verbose=verbose
-            )
-        except Exception as e:
-            result[0] = ([], [])
-            logging.error(f"Error in arping: {e}")
-
-    # Create and start thread
-    thread = threading.Thread(target=target_func)
-    thread.daemon = True
-    thread.start()
-
-    # Wait for thread to complete or timeout
-    max_wait = timeout * retry
-    start_time = time.time()
-
-    while thread.is_alive() and time.time() - start_time < max_wait:
-        time.sleep(0.1)
-
-    if thread.is_alive():
-        logging.warning(f"ARP scan timed out after {max_wait} seconds")
-        return [], []
-
-    # Return the results
-    if result[0] is None:
-        logging.warning('Non results returned by arping')
-        return [], []
-    return result[0]
 
 
 def extract_ip_addresses(nmap_output):
@@ -157,44 +96,29 @@ def get_active_nodes_nmap(net, iface, max_trials=10) -> list:
 
 
 def scan_and_print_neighbors(net, interface, timeout=5):
-    logging.info('Calling scan_and_print_neighbors function')
-    output_scan_and_print = open('/logs/scan_print_output.log', "a")
-    error_scan_and_print = open('/logs/scan_print_error.log', "a")
     try:
-        logging.info('About to scan network for nodes')
-        # ans, unans = scapy.layers.l2.arping(net, iface=interface, timeout=timeout, verbose=False)
-        # ans, unans = improved_arping(net, iface=interface, timeout=timeout, verbose=True, retry=2)
-        ans = get_active_nodes_nmap(net, iface=interface)
-        logging.info('Done scanning network for nodes')
-        # logging.info('Got ans: {}'.format(ans.res))
-        # logging.info('Got unans: {}'.format(unans.res))
-        logging.info('Got ans: {}'.format(ans))
-        # for s, r in ans.res:
-        for line in ans:
-            # line = r.sprintf("%ARP.psrc%")
+        ans, unans = scapy.layers.l2.arping(net, iface=interface, timeout=timeout, verbose=False)
+        for s, r in ans.res:
+            line = r.sprintf("%ARP.psrc%")
+            line = r.sprintf("%ARP.psrc%")
             # logging.info(line)
-            logging.info('Loop node with IP {}'.format(line))
             command = ['route', 'add', '-net', '192.168.70.128/26', 'gw', line, 'dev', 'col0']
-            response = subprocess.run(args=command, stdout=output_scan_and_print, stderr=error_scan_and_print).returncode
+            response = subprocess.run(args=command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode
             command = ['ping', '-c', '1', '-t', '1', '192.168.70.129']
-            response = subprocess.run(args=command, stdout=output_scan_and_print, stderr=error_scan_and_print).returncode
-            logging.info("For host %s response is %s" % (line, response))
+            response = subprocess.run(args=command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode
+            #logging.info("For host %s response is %s" % (line, response))
             if response == 0:
                 logging.info("IP address of host running CN is %s" % line)
                 break
             else:
                 os.system("route del -net 192.168.70.128/26")
-            # try:
-            #     hostname = socket.gethostbyaddr(r.psrc)
-            #     logging.info('Got hostname {}'.format(hostname))
-            #     line += " " + hostname[0]
-            #     logging.info('Got line {}'.format(line))
-            # except socket.herror as he:
-            #     # failed to resolve
-            #     logging.warning('Passing on error: {}'.format(he))
-            #     pass
+            try:
+                hostname = socket.gethostbyaddr(r.psrc)
+                line += " " + hostname[0]
+            except socket.herror:
+                # failed to resolve
+                pass
     except socket.error as e:
-        logging.error('Got error: {}'.format(e))
         if e.errno == errno.EPERM:     # Operation not permitted
             logging.error("%s. Did you run as root?", e.strerror)
         else:
@@ -202,26 +126,20 @@ def scan_and_print_neighbors(net, interface, timeout=5):
 
 
 def main(interface_to_scan=None):
-    logging.info('Calling function to set route to CN')
-    output_file_cn_route = open('/logs/cn_route_output.log', "a")
-    error_file_cn_route = open('/logs/cn_route_error.log', "a")
     if os.geteuid() != 0:
-        logging.error('You need to be root to run this script')
+        print('You need to be root to run this script', file=sys.stderr)
         sys.exit(1)
 
     for network, netmask, _, interface, address, _ in scapy.config.conf.route.routes:
 
         if interface_to_scan and interface_to_scan != interface:
-            logging.warning('Skipping interface {}'.format(interface))
             continue
 
         # skip loopback network and default gw
         if network == 0 or interface == 'lo' or address == '127.0.0.1' or address == '0.0.0.0':
-            logging.warning('Skipping interface {}'.format(interface))
             continue
 
         if netmask <= 0 or netmask == 0xFFFFFFFF:
-            logging.warning('Skipping interface {} because of netmask {}'.format(interface, netmask))
             continue
 
         # skip docker interface
@@ -232,35 +150,27 @@ def main(interface_to_scan=None):
             logging.warning("Skipping interface '%s'" % interface)
             continue
 
-        logging.info('Using interface {}'.format(interface))
-        logging.info('Before calling to_CIDR_notation')
         net = to_CIDR_notation(network, netmask)
-        logging.info('After calling to_CIDR_notation')
-        logging.info('Got net {}'.format(net))
 
         if net:
             found = False
             command = ['ping', '-c', '1', '-t', '1', '192.168.70.129']
-            response = subprocess.run(args=command, stdout=output_file_cn_route, stderr=error_file_cn_route).returncode
-            logging.info('Got response from ping: {}'.format(response))
+            response = subprocess.run(args=command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode
             if response == 0:
                 logging.info("Route to CN host exists!")
                 found = True
             else:
                 command = ['route', 'del', '-net', '192.168.70.128/26']
-                subprocess.run(args=command, stdout=output_file_cn_route, stderr=error_file_cn_route).returncode
+                subprocess.run(args=command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode
                 found = False
-
             while not found:
-                logging.info('Before calling scan_and_print_neighbors')
                 scan_and_print_neighbors(net, interface)
-                logging.info('After calling scan_and_print_neighbors')
                 command = ['ping', '-c', '1', '-t', '1', '192.168.70.129']
-                found = (subprocess.run(args=command, stdout=output_file_cn_route, stderr=error_file_cn_route).returncode) == 0
-                logging.info("Found is %s" % found)
+                found = (subprocess.run(args=command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode) == 0
+                #logging.info("Found is %s" % found)
                 if found:
                     logging.info("Route to core network added!")
-                    return
+                    break
                 else:
                     logging.info("Route to core network not found. Retrying...")
 
