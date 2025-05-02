@@ -56,15 +56,18 @@ if [ "$mode_type" == "gnb" ]; then
             script_cmd="auto-test.py -T gnb --gnb_id ${gnb_id} --near_rt_ric_ip ${near_rt_ric_ip}"
         fi
     fi
+    echo ${script_cmd}
 elif [ "$mode_type" == "ue" ]; then
     script_cmd="auto-test.py -T ue -t ${iperf_duration} --iperf_protocol ${iperf_protocol} -D ${dl_iperf_rate} -U ${ul_iperf_rate}"
     if [ -z ${timing_advance+x} ]; then :; else script_cmd=${script_cmd}" --timing_advance ${timing_advance}"; fi
+    # we need this as the batch job terminates the start.sh script after a timeout, tearing down oai as well
+    # for the gNB we are spawning subprocesses in new shells as otherwise the connection
+    # to the near-rt ric is not started
+    script_cmd=${script_cmd}" &"
     echo ${script_cmd}
-    # script_cmd="auto-test.py -T ue -t ${iperf_duration}"
 elif [ "$mode_type" == "core" ]; then
     script_cmd="auto-test.py -T core-nw"
 else
     echo "Invalid config file option ${mode_type}." >> /logs/run.log
     exit 1
 fi
-
