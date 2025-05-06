@@ -254,11 +254,7 @@ class Ran:
 
         # Set F1 parameters
         oai_args += f1_cmd_args
-
-        # Set chrt parameters
-        chrt_args = ['chrt', '-f', '99']
-
-        self.cmd_stored = chrt_args + pre_path + executable + oai_args
+        self.cmd_stored = pre_path + executable + oai_args
 
         logging.info('Pre path is {}'.format(pre_path))
         logging.info('Executable is {}'.format(executable))

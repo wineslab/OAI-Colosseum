@@ -46,7 +46,10 @@ if [ "$mode_type" == "gnb" ]; then
           echo "Setting route to Near-RT RIC"
           first_three_ip_octects=$(ip addr show can0 | grep -oE 'inet [0-9\.]+/[0-9]+' | awk '{print $2}' | cut -d '/' -f 1 | awk -F'.' '{print $1"."$2"."$3}')
           route add ${near_rt_ric_ip}/32 gw ${first_three_ip_octects}.1 dev can0
+
+          echo "Running RIC reachability tests"
           ping -c 3 ${near_rt_ric_ip} &> /logs/ric_reachability.log
+          echo "" >> /logs/ric_reachability.log
           ncat -zv ${near_rt_ric_ip} --sctp 32223 &>> /logs/ric_reachability.log
         fi
 

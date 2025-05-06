@@ -323,11 +323,15 @@ def run_gnb_test(args):
     gnb.run()
     logging.info(gnb.cmd_stored)
     output_file = open('/root/last_log', "w")
-    p = subprocess.Popen(gnb.cmd_stored, stdout=output_file, stderr=subprocess.STDOUT)
+
+    # add unbufferend option to print e2 agent logs
+    stdbuf_cmd = ["stdbuf", "-oL"]
+
+    p = subprocess.Popen(stdbuf_cmd + gnb.cmd_stored, stdout=output_file, stderr=subprocess.STDOUT)
     while True:
         if p.poll() is not None:
             logging.info("gNB process ended. Restarting it.")
-            p = subprocess.Popen(gnb.cmd_stored, stdout=output_file, stderr=subprocess.STDOUT)
+            p = subprocess.Popen(stdbuf_cmd + gnb.cmd_stored, stdout=output_file, stderr=subprocess.STDOUT)
         time.sleep(5)
 
 if __name__ == '__main__':
