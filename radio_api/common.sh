@@ -47,6 +47,7 @@ if [ "$mode_type" == "gnb" ]; then
           first_three_ip_octects=$(ip addr show can0 | grep -oE 'inet [0-9\.]+/[0-9]+' | awk '{print $2}' | cut -d '/' -f 1 | awk -F'.' '{print $1"."$2"."$3}')
           route add ${near_rt_ric_ip}/32 gw ${first_three_ip_octects}.1 dev can0
           ping -c 3 ${near_rt_ric_ip} &> /logs/ric_reachability.log
+          ncat -zv ${near_rt_ric_ip} --sctp 32223 &>> /logs/ric_reachability.log
         fi
 
         if [ -z ${gnb_id+x} ]; then
@@ -60,10 +61,6 @@ if [ "$mode_type" == "gnb" ]; then
 elif [ "$mode_type" == "ue" ]; then
     script_cmd="auto-test.py -T ue -t ${iperf_duration} --iperf_protocol ${iperf_protocol} -D ${dl_iperf_rate} -U ${ul_iperf_rate}"
     if [ -z ${timing_advance+x} ]; then :; else script_cmd=${script_cmd}" --timing_advance ${timing_advance}"; fi
-    # we need this as the batch job terminates the start.sh script after a timeout, tearing down oai as well
-    # for the gNB we are spawning subprocesses in new shells as otherwise the connection
-    # to the near-rt ric is not started
-    script_cmd=${script_cmd}" &"
     echo ${script_cmd}
 elif [ "$mode_type" == "core" ]; then
     script_cmd="auto-test.py -T core-nw"

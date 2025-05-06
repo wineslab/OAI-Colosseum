@@ -323,11 +323,11 @@ def run_gnb_test(args):
     gnb.run()
     logging.info(gnb.cmd_stored)
     output_file = open('/root/last_log', "w")
-    p = subprocess.Popen(gnb.cmd_stored, stdout=output_file, stderr=subprocess.STDOUT, start_new_session=True)
+    p = subprocess.Popen(gnb.cmd_stored, stdout=output_file, stderr=subprocess.STDOUT)
     while True:
         if p.poll() is not None:
             logging.info("gNB process ended. Restarting it.")
-            p = subprocess.Popen(gnb.cmd_stored, stdout=output_file, stderr=subprocess.STDOUT, start_new_session=True)
+            p = subprocess.Popen(gnb.cmd_stored, stdout=output_file, stderr=subprocess.STDOUT)
         time.sleep(5)
 
 if __name__ == '__main__':
