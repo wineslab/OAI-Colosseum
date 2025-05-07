@@ -356,9 +356,7 @@ def monitor_e2_setup_completion(log_file_path, timeout=60, check_interval=1):
 
                 # Read new lines
                 for line in file:
-                    if "[E2 AGENT]" in line or "[E2-AGENT]" in line:
-                        logging.info(line)
-                        
+                    if "[E2 AGENT]" in line or "[E2-AGENT]" in line:                        
                         if not initialization_found:
                             if "Initializing" in line:
                                 initialization_found = True
@@ -369,7 +367,7 @@ def monitor_e2_setup_completion(log_file_path, timeout=60, check_interval=1):
                                 setup_request_tx_found = True
                                 logging.info('E2 setup request found')
 
-                        if "E2 SETUP-REQUEST rx" in line:
+                        if "E2 SETUP RESPONSE rx" in line:
                             logging.info('E2 setup response found')
                             return True
 
@@ -411,9 +409,10 @@ def run_gnb_test(args):
     p = subprocess.Popen(cmd_to_run, stdout=output_file, stderr=subprocess.STDOUT, start_new_session=True)
 
     # take time and do this for the first n minutes or so
-    gnb_monitor_time = 300  # seconds
+    gnb_monitor_time = 180  # seconds
     gnb_start_time = time.time()
     e2_connection_established = False
+    e2_monitor_time = 20
 
     while time.time() - gnb_start_time < gnb_monitor_time:
         time.sleep(5)
@@ -423,7 +422,7 @@ def run_gnb_test(args):
             res_e2_monitor_queue = multiprocessing.Queue()
             p_e2_monitor = multiprocessing.Process(
                 target=process_monitor_e2,
-                args=(output_file_path, res_e2_monitor_queue, 30, 1)
+                args=(output_file_path, res_e2_monitor_queue, e2_monitor_time, 1)
             )
             p_e2_monitor.daemon = True  # Process will exit when main program exits
             p_e2_monitor.start()
@@ -454,7 +453,7 @@ def run_gnb_test(args):
             output_file = open(output_file_path, "w")
             p = subprocess.Popen(cmd_to_run, stdout=output_file, stderr=subprocess.STDOUT, start_new_session=True)
 
-    logging.info("Ended monitoring E2 setup establishment")
+    logging.info("Ended monitoring gNB")
 
 
 if __name__ == '__main__':
