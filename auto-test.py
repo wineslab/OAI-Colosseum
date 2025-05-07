@@ -344,7 +344,6 @@ def monitor_e2_setup_completion(log_file_path, timeout=60, check_interval=1):
     # Initialize flags
     initialization_found = False
     setup_request_tx_found = False
-    setup_request_rx_found = False
 
     # Keep track of where we are in the file
     position = 0
@@ -364,27 +363,18 @@ def monitor_e2_setup_completion(log_file_path, timeout=60, check_interval=1):
                             if "Initializing" in line:
                                 initialization_found = True
                                 logging.info('E2 agent initialization found')
-                            else:
-                                logging.info('E2 agent initialization not found')
-                        elif not setup_request_tx_found:
+                        
+                        if not setup_request_tx_found:
                             if "E2 SETUP-REQUEST tx" in line:
                                 setup_request_tx_found = True
                                 logging.info('E2 setup request found')
-                            else:
-                                logging.info('E2 setup request not found')
-                        else:
-                            if "E2 SETUP-REQUEST rx" in line:
-                                setup_request_rx_found = True
-                                logging.info('E2 setup response found')
-                            else:
-                                logging.info('E2 setup request not found')
+
+                        if "E2 SETUP-REQUEST rx" in line:
+                            logging.info('E2 setup response found')
+                            return True
 
                 # Update our position for next read
                 position = file.tell()
-
-            # If we found what we're looking for, return success
-            if setup_request_rx_found:
-                return True
 
             # Wait before checking again
             time.sleep(check_interval)
