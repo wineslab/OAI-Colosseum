@@ -405,7 +405,8 @@ def run_gnb_test(args):
     gnb.execute = False
     gnb.run()
     logging.info(gnb.cmd_stored)
-    output_file = open('/root/last_log', "w")
+    output_file_path = '/root/last_log'
+    output_file = open(output_file_path, "w")
 
     # add unbufferend option to print e2 agent logs
     stdbuf_cmd = ["stdbuf", "-oL"]
@@ -427,15 +428,15 @@ def run_gnb_test(args):
             res_e2_monitor_queue = multiprocessing.Queue()
             p_e2_monitor = multiprocessing.Process(
                 target=process_monitor_e2,
-                args=(output_file, result_queue, 60, 1)
+                args=(output_file_path, res_e2_monitor_queue, 10, 1)
             )
             p_e2_monitor.daemon = True  # Process will exit when main program exits
             p_e2_monitor.start()
 
             # block main program and wait for result to be available
-            res_e2_monitor = result_queue.get()
+            res_e2_monitor = res_e2_monitor_queue.get()
 
-            if process.poll() is None:
+            if p.poll() is None:
                 if not res_e2_monitor:
                     logging.warning("E2 connection was not established")
                     logging.warning("Terminating gNB")
@@ -447,8 +448,15 @@ def run_gnb_test(args):
 
         if p.poll() is not None:
             logging.info("gNB process ended. Restarting it.")
-            p = subprocess.Popen(cmd_to_run, stdout=output_file, stderr=subprocess.STDOUT, start_new_session=True)
+
+            try:
+                output_file.close()
+                os.remove(output_file_path)
+            except OSError:
+                pass
+
             e2_connection_established = False
+            p = subprocess.Popen(cmd_to_run, stdout=output_file, stderr=subprocess.STDOUT, start_new_session=True)
 
     logging.info("Ended monitoring E2 setup establishment")
 

@@ -256,14 +256,13 @@ class Ran:
         oai_args += f1_cmd_args
         self.cmd_stored = pre_path + executable + oai_args
 
-        logging.info('Pre path is {}'.format(pre_path))
-        logging.info('Executable is {}'.format(executable))
-        logging.info('OAI args are {}'.format(oai_args))
-        logging.info('Command stored is: {}'.format(self.cmd_stored))
+        # logging.info('Pre path is {}'.format(pre_path))
+        # logging.info('Executable is {}'.format(executable))
+        # logging.info('OAI args are {}'.format(oai_args))
+        # logging.info('Command stored is: {}'.format(self.cmd_stored))
         if self.execute:
-            logging.info('Inside self.execute bracket')
             command_to_run = f"""{' '.join(self.cmd_stored)}  2>&1 | tee ~/mylogs/gNB-$(date +"%m%d%H%M").log | tee ~/last_log"""
-            logging.info(command_to_run)
+            # logging.info(command_to_run)
             os.system(command_to_run)
 
     def run_ue(self):
