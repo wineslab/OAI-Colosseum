@@ -15,6 +15,7 @@ def handle_sigint(sig, frame):
     logging.info("Stopping the process...")
     sys.exit(0)
 
+
 def tail_count(file_path, target_string):
     # Start at the end of the file
     count = 0
@@ -30,6 +31,7 @@ def tail_count(file_path, target_string):
                     count += 1
 
     return count
+
 
 def tail(file_path, target_string, max_num_search):
     # Start at the end of the file
@@ -62,6 +64,7 @@ def tail(file_path, target_string, max_num_search):
 
     return False
 
+
 def get_interface_ip(interface_prefix):
     interfaces = netifaces.interfaces()
     for interface in interfaces:
@@ -71,6 +74,7 @@ def get_interface_ip(interface_prefix):
                 ip_address = addresses[netifaces.AF_INET][0]['addr']
                 return ip_address
     return None
+
 
 def stop_and_kill_subp(process):
     logging.info("Stopping UE")
@@ -82,6 +86,7 @@ def stop_and_kill_subp(process):
         logging.info('Process still running despite sending SIGINT. Force killing.')
         process.send_signal(signal.SIGKILL)
     process.wait()
+
 
 def run_and_check_conn_established(command_to_run):
     output_filename = '/root/last_log'
@@ -118,6 +123,7 @@ def run_and_check_conn_established(command_to_run):
 
     return True, ueProcess
 
+
 def start_core_iperf(imsi):
     current_directory = '/root'
     port = int('52'+imsi[-2:])
@@ -132,6 +138,7 @@ def start_core_iperf(imsi):
         return None
 
     return iperfSrv
+
 
 def scan_docker_logs_and_do_stuff(service_name):
     command = f"docker logs {service_name} -f"  # Use `-f` flag for continuous log streaming
@@ -175,9 +182,11 @@ def scan_docker_logs_and_do_stuff(service_name):
     for j in server_jobs:
         j.terminate()
 
+
 def run_core_test():
     docker_image_to_scan = 'oai-smf'
     scan_docker_logs_and_do_stuff(docker_image_to_scan)
+
 
 def remove_cmd_line_option(command, option):
     try:
@@ -186,6 +195,7 @@ def remove_cmd_line_option(command, option):
         command.pop(index) # remove value
     except ValueError:
         logging.error(f"Option {option} not found in command line")
+
 
 def run_and_find_A(command_to_run, args):
     # Remove A from command line
@@ -238,6 +248,7 @@ def run_and_find_A(command_to_run, args):
           break
       # Remove A from command line
       remove_cmd_line_option(command_to_run, '-A')
+
 
 def run_UE_test(args):
     current_directory = '/root'
@@ -406,34 +417,40 @@ def run_gnb_test(args):
     # take time and do this for the first n minutes or so
     gnb_monitor_time = 300  # seconds
     gnb_start_time = time.time()
+    e2_connection_established = False
 
-    while time.time() - gnb_start_time < gnb_monitor_time_s:
+    while time.time() - gnb_start_time < gnb_monitor_time:
         time.sleep(5)
-        logging.info("Monitoring E2 setup establishment")
-        res_e2_monitor_queue = multiprocessing.Queue()
-        p_e2_monitor = multiprocessing.Process(
-            target=process_monitor_e2,
-            args=(output_file, result_queue, 60, 1)
-        )
-        p_e2_monitor.daemon = True  # Process will exit when main program exits
-        p_e2_monitor.start()
+        
+        if not e2_connection_established:
+            logging.info("Monitoring E2 setup establishment...")
+            res_e2_monitor_queue = multiprocessing.Queue()
+            p_e2_monitor = multiprocessing.Process(
+                target=process_monitor_e2,
+                args=(output_file, result_queue, 60, 1)
+            )
+            p_e2_monitor.daemon = True  # Process will exit when main program exits
+            p_e2_monitor.start()
 
-        # block main program and wait for result to be available
-        res_e2_monitor = result_queue.get()
+            # block main program and wait for result to be available
+            res_e2_monitor = result_queue.get()
 
-        if process.poll() is None:
-            if not res_e2_monitor:
-                logging.warning("E2 connection was not established")
-                logging.warning("Terminating gNB")
-                os.killpg(os.getpgid(p.pid), signal.SIGKILL)
-                time.sleep(5)
-            else:
-                logging.info("E2 connection established")
+            if process.poll() is None:
+                if not res_e2_monitor:
+                    logging.warning("E2 connection was not established")
+                    logging.warning("Terminating gNB")
+                    os.killpg(os.getpgid(p.pid), signal.SIGKILL)
+                    time.sleep(5)
+                else:
+                    logging.info("E2 connection established")
+                    e2_connection_established = True
 
-        # the reason this is not done in an else branch is that we want to restart right away if terminated because of no E2 connectivity
         if p.poll() is not None:
             logging.info("gNB process ended. Restarting it.")
             p = subprocess.Popen(cmd_to_run, stdout=output_file, stderr=subprocess.STDOUT, start_new_session=True)
+            e2_connection_established = False
+
+    logging.info("Ended monitoring E2 setup establishment")
 
 
 if __name__ == '__main__':
