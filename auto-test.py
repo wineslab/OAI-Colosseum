@@ -3,6 +3,7 @@ import signal
 import time
 import re
 import sys
+import multiprocessing
 import netifaces
 import os
 import argparse
@@ -314,6 +315,77 @@ def run_UE_test(args):
     # Issue kill signal to the UE
     stop_and_kill_subp(ueProcess)
 
+
+def monitor_e2_setup_completion(log_file_path, timeout=60, check_interval=1):
+    """
+    Monitor a log file for E2 agent setup completion.
+
+    Args:
+        log_file_path: Path to the log file
+        timeout: Maximum time to monitor in seconds
+        check_interval: Time between checks in seconds
+
+    Returns:
+        True if setup is completed, False otherwise
+    """
+    start_time = time.time()
+
+    # Initialize flags
+    initialization_found = False
+    setup_request_rx_found = False
+
+    # Keep track of where we are in the file
+    position = 0
+
+    try:
+        while time.time() - start_time < timeout:
+            with open(log_file_path, 'r') as file:
+                # Seek to where we left off
+                file.seek(position)
+
+                # Read new lines
+                for line in file:
+                    if "[E2 AGENT]" in line or "[E2-AGENT]" in line:
+                        if "Initializing" in line:
+                            initialization_found = True
+                            logging.info('E2 agent initialization found')
+                        else:
+                            logging.info('E2 agent initialization not found')
+
+                        if "E2 SETUP-REQUEST tx" in line:
+                            logging.info('E2 setup request found')
+                        else:
+                            logging.info('E2 setup request not found')
+
+                        if "E2 SETUP-REQUEST rx" in line:
+                            setup_request_rx_found = True
+                            logging.info('E2 setup response found')
+                        else:
+                            logging.info('E2 setup request not found')
+
+                # Update our position for next read
+                position = file.tell()
+
+            # If we found what we're looking for, return success
+            if initialization_found and setup_request_rx_found:
+                return True
+
+            # Wait before checking again
+            time.sleep(check_interval)
+
+        # If we got here, we timed out
+        return False
+
+    except Exception as e:
+        logging.error(f"An error occurred: {e}")
+        return False
+
+
+def process_monitor_e2(log_path, queue, timeout=, interval):
+        result = monitor_e2_setup_completion(log_path, timeout, interval)
+        queue.put(result)
+
+
 def run_gnb_test(args):
     logging.info('Calling run_gnb_test function')
     args.mode = 'sa'
@@ -328,12 +400,41 @@ def run_gnb_test(args):
     stdbuf_cmd = ["stdbuf", "-oL"]
 
     cmd_to_run = stdbuf_cmd + gnb.cmd_stored
-    p = subprocess.Popen(cmd_to_run, stdout=output_file, stderr=subprocess.STDOUT)
-    while True:
+    logging.info("Running command: {}".format(cmd_to_run))
+    p = subprocess.Popen(cmd_to_run, stdout=output_file, stderr=subprocess.STDOUT, start_new_session=True)
+
+    # take time and do this for the first n minutes or so
+    gnb_monitor_time = 300  # seconds
+    gnb_start_time = time.time()
+
+    while time.time() - gnb_start_time < gnb_monitor_time_s:
+        time.sleep(5)
+        logging.info("Monitoring E2 setup establishment")
+        res_e2_monitor_queue = multiprocessing.Queue()
+        p_e2_monitor = multiprocessing.Process(
+            target=process_monitor_e2,
+            args=(output_file, result_queue, 60, 1)
+        )
+        p_e2_monitor.daemon = True  # Process will exit when main program exits
+        p_e2_monitor.start()
+
+        # block main program and wait for result to be available
+        res_e2_monitor = result_queue.get()
+
+        if process.poll() is None:
+            if not res_e2_monitor:
+                logging.warning("E2 connection was not established")
+                logging.warning("Terminating gNB")
+                os.killpg(os.getpgid(p.pid), signal.SIGKILL)
+                time.sleep(5)
+            else:
+                logging.info("E2 connection established")
+
+        # the reason this is not done in an else branch is that we want to restart right away if terminated because of no E2 connectivity
         if p.poll() is not None:
             logging.info("gNB process ended. Restarting it.")
-            p = subprocess.Popen(cmd_to_run, stdout=output_file, stderr=subprocess.STDOUT)
-        time.sleep(5)
+            p = subprocess.Popen(cmd_to_run, stdout=output_file, stderr=subprocess.STDOUT, start_new_session=True)
+
 
 if __name__ == '__main__':
     # set logger
