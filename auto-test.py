@@ -327,14 +327,12 @@ def run_gnb_test(args):
     # add unbufferend option to print e2 agent logs
     stdbuf_cmd = ["stdbuf", "-oL"]
 
-    # Set chrt parameters
-    chrt_args = ['chrt', '-f', '99']
-
-    p = subprocess.Popen(stdbuf_cmd + chrt_args + gnb.cmd_stored, stdout=output_file, stderr=subprocess.STDOUT)
+    cmd_to_run = stdbuf_cmd + gnb.cmd_stored
+    p = subprocess.Popen(cmd_to_run, stdout=output_file, stderr=subprocess.STDOUT)
     while True:
         if p.poll() is not None:
             logging.info("gNB process ended. Restarting it.")
-            p = subprocess.Popen(stdbuf_cmd + gnb.cmd_stored, stdout=output_file, stderr=subprocess.STDOUT)
+            p = subprocess.Popen(cmd_to_run, stdout=output_file, stderr=subprocess.STDOUT)
         time.sleep(5)
 
 if __name__ == '__main__':
