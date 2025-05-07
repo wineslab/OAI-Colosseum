@@ -286,7 +286,6 @@ class Ran:
                 '--band', '78',
                 '-C', f'{self.ssb_frequency}',
                 '--ue-txgain', '0',
-                '-A', f'{self.conf["timing_advance"]}',
                 '--clock-source', '1',
                 '--time-source', '1',
                 '--ue-fo-compensation',
@@ -297,10 +296,11 @@ class Ran:
         if self.args.type == 'phy-test':
             args += ['--phy-test']
         if self.args.rfsim > 0:
-            executable = ['RFSIMULATOR=127.0.0.1', f'{main_exe}']
+            args += ['--rfsimulator.serveraddr 127.0.0.1']
             args += ['--rfsim']
         else:
-            executable = main_exe
+            args += [f'-A {self.conf["timing_advance"]}']
+        executable = main_exe
         if self.prb >= 106 and self.numerology == 1 and self.args.tqsample:
             # USRP X3*0 needs to lower the sample rate to 3/4
             args += ['-E']
