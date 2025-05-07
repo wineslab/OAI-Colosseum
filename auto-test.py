@@ -381,7 +381,7 @@ def monitor_e2_setup_completion(log_file_path, timeout=60, check_interval=1):
         return False
 
 
-def process_monitor_e2(log_path, queue, timeout=, interval):
+def process_monitor_e2(log_path, queue, timeout, interval):
         result = monitor_e2_setup_completion(log_path, timeout, interval)
         queue.put(result)
 
