@@ -343,6 +343,7 @@ def monitor_e2_setup_completion(log_file_path, timeout=60, check_interval=1):
 
     # Initialize flags
     initialization_found = False
+    setup_request_tx_found = False
     setup_request_rx_found = False
 
     # Keep track of where we are in the file
@@ -357,28 +358,32 @@ def monitor_e2_setup_completion(log_file_path, timeout=60, check_interval=1):
                 # Read new lines
                 for line in file:
                     if "[E2 AGENT]" in line or "[E2-AGENT]" in line:
-                        if "Initializing" in line:
-                            initialization_found = True
-                            logging.info('E2 agent initialization found')
+                        logging.info(line)
+                        
+                        if not initialization_found:
+                            if "Initializing" in line:
+                                initialization_found = True
+                                logging.info('E2 agent initialization found')
+                            else:
+                                logging.info('E2 agent initialization not found')
+                        elif not setup_request_tx_found:
+                            if "E2 SETUP-REQUEST tx" in line:
+                                setup_request_tx_found = True
+                                logging.info('E2 setup request found')
+                            else:
+                                logging.info('E2 setup request not found')
                         else:
-                            logging.info('E2 agent initialization not found')
-
-                        if "E2 SETUP-REQUEST tx" in line:
-                            logging.info('E2 setup request found')
-                        else:
-                            logging.info('E2 setup request not found')
-
-                        if "E2 SETUP-REQUEST rx" in line:
-                            setup_request_rx_found = True
-                            logging.info('E2 setup response found')
-                        else:
-                            logging.info('E2 setup request not found')
+                            if "E2 SETUP-REQUEST rx" in line:
+                                setup_request_rx_found = True
+                                logging.info('E2 setup response found')
+                            else:
+                                logging.info('E2 setup request not found')
 
                 # Update our position for next read
                 position = file.tell()
 
             # If we found what we're looking for, return success
-            if initialization_found and setup_request_rx_found:
+            if setup_request_rx_found:
                 return True
 
             # Wait before checking again
@@ -428,7 +433,7 @@ def run_gnb_test(args):
             res_e2_monitor_queue = multiprocessing.Queue()
             p_e2_monitor = multiprocessing.Process(
                 target=process_monitor_e2,
-                args=(output_file_path, res_e2_monitor_queue, 10, 1)
+                args=(output_file_path, res_e2_monitor_queue, 30, 1)
             )
             p_e2_monitor.daemon = True  # Process will exit when main program exits
             p_e2_monitor.start()
@@ -456,6 +461,7 @@ def run_gnb_test(args):
                 pass
 
             e2_connection_established = False
+            output_file = open(output_file_path, "w")
             p = subprocess.Popen(cmd_to_run, stdout=output_file, stderr=subprocess.STDOUT, start_new_session=True)
 
     logging.info("Ended monitoring E2 setup establishment")
