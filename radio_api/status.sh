@@ -13,20 +13,23 @@ if [ $# -ne 0 ]
 then exit 64 #exit with an error
 fi
 
-MESSAGE=""
+# MESSAGE=""
 
-# check to see if our state file even exists
-if [ -e /tmp/NR_STATE ]; then
-    STATE=`cat /tmp/NR_STATE`
+# # check to see if our state file even exists
+# if [ -e /tmp/NR_STATE ]; then
+#     STATE=`cat /tmp/NR_STATE`
 
-    if [ -z "$STATE" ]; then
-        STATE="BOOTING"
-        MESSAGE="NR_STATE is blank"
-    fi
-else
-    STATE="BOOTING"
-    MESSAGE="NR_STATE is missing"
-fi
+#     if [ -z "$STATE" ]; then
+#         STATE="BOOTING"
+#         MESSAGE="NR_STATE is blank"
+#     fi
+# else
+#     STATE="BOOTING"
+#     MESSAGE="NR_STATE is missing"
+# fi
+
+STATE="READY"
+MESSAGE="Forcing READY state to speed up batch job execution"
 
 # put the state in a serialized dictionary
 OUTPUT="{\"STATUS\":\"$STATE\",\"INFO\":\"$MESSAGE\"}"

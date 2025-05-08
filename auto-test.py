@@ -259,6 +259,10 @@ def run_UE_test(args):
     ue.run()
     logging.info(ue.cmd_stored)
     conn_established = False
+
+    # pause in case we need to restart the gNB
+    time.sleep(30)
+
     if args.ue_find_A:
         A = run_and_find_A(ue.cmd_stored, args)
         logging.info(f"Found A = {A} to be stable. Try it manually now.")
