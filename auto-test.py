@@ -417,7 +417,7 @@ def run_gnb_test(args):
     while time.time() - gnb_start_time < gnb_monitor_time:
         time.sleep(5)
         
-        if not e2_connection_established:
+        if gnb.near_rt_ric_ip and not e2_connection_established:
             logging.info("Monitoring E2 setup establishment...")
             res_e2_monitor_queue = multiprocessing.Queue()
             p_e2_monitor = multiprocessing.Process(
