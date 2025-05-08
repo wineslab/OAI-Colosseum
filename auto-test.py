@@ -261,7 +261,9 @@ def run_UE_test(args):
     conn_established = False
 
     # pause in case we need to restart the gNB
-    time.sleep(30)
+    ue_wait_time = 30
+    logging.info(f"Pausing for {ue_wait_time} seconds")
+    time.sleep(ue_wait_time)
 
     if args.ue_find_A:
         A = run_and_find_A(ue.cmd_stored, args)
