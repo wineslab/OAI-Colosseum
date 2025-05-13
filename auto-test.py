@@ -518,6 +518,10 @@ if __name__ == '__main__':
                         default='',
                         type=str,
                         help='IP address of Near-RT RIC to connect to using FlexRIC agent')
+    parser.add_argument('--flexric_sm_dir',
+                        default='/usr/local/lib/flexric/',
+                        type=str,
+                        help='Directory with FlexRIC service models for connection with the RIC')
     parser.add_argument('--gnb_id',
                         default='',
                         type=str)

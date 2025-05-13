@@ -77,8 +77,9 @@ class Ran:
         if args.timing_advance is not None:
             self.conf["timing_advance"] = args.timing_advance
 
-        logging.info('Setting Near-RT RIC IP')
+        logging.info('Setting Near-RT RIC IP and service model directory')
         self.near_rt_ric_ip = args.near_rt_ric_ip
+        self.flexric_sm_dir = args.flexric_sm_dir
         logging.info('Near-RT RIC IP set')
         self.set_ips()
         logging.info('IP addresses set')
@@ -249,8 +250,9 @@ class Ran:
                      '--gNBs.[0].NETWORK_INTERFACES.GNB_IPV4_ADDRESS_FOR_FOR_NGU', f'{local_ip}']
 
         # Set Near-RT RIC parameters
-        if self.near_rt_ric_ip:
-            oai_args += ['--e2_agent.near_ric_ip_addr', f'{self.near_rt_ric_ip}']
+        if self.near_rt_ric_ip and self.flexric_sm_dir:
+            oai_args += ['--e2_agent.near_ric_ip_addr', f'{self.near_rt_ric_ip}',
+                         '--e2_agent.sm_dir', f'{self.flexric_sm_dir}']
 
         # Set F1 parameters
         oai_args += f1_cmd_args
@@ -359,6 +361,10 @@ if __name__ == '__main__':
                         default='',
                         type=str,
                         help='IP address of Near-RT RIC to connect to using FlexRIC agent')
+    parser.add_argument('--flexric_sm_dir',
+                        default='/usr/local/lib/flexric/',
+                        type=str,
+                        help='Directory with FlexRIC service models for connection with the RIC')
     parser.add_argument('--gnb_id',
                         default='',
                         type=str)
