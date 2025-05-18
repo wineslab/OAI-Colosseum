@@ -238,8 +238,9 @@ class Ran:
             # gdb override numa
             pre_path = ['gdb', '--args']
         args = ['--thread-pool', '-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1',
-                f'--{self.mode}',
+                #f'--{self.mode}',
                 '--uicc0.imsi', f'2089500000000{self.node_id[1:]}',
+                '--uicc0.dnn', "internet",
                 '--usrp-args', f'addr={USRP_ADDR}',
                 '--numerology', f'{self.numerology}',
                 '-r', f'{self.prb}',
@@ -247,7 +248,7 @@ class Ran:
                 '--ssb', f'{self.conf["ssb_start"]}',
                 '--band', '78',
                 '-C', f'{self.ssb_frequency}',
-                '--nokrnmod', '1',
+                #'--nokrnmod', '1',
                 '--ue-txgain', '0',
                 '--ue-rxgain', '120',
                 '-A', f'{self.conf["timing_advance"]}',
