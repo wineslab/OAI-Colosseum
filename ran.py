@@ -71,6 +71,10 @@ class Ran:
         self.conf = self.conf_json[str(self.numerology)][str(self.prb)]
         self.set_if_freq(self.channel)
         self.set_params(arfcn=self.conf['arfcns'][self.channel])
+        self.mnc=args.mnc
+        self.mcc=args.mcc
+        self.tac=args.tac
+        self.dnn=args.dnn
 
         self.set_ips()
         try:
@@ -182,7 +186,7 @@ class Ran:
             local_dev = IAB_DEV
         f1_cmd_args = self.set_config_file(type, local_ip, local_dev)
         LABW = get_locationandbandwidth(self.prb)
-        pre_path = ""
+        pre_path = []
         if self.args.numa > 0:
             pre_path = ['numactl', f'--cpunodebind=netdev:{USRP_DEV}', f'--membind=netdev:{USRP_DEV}']
 
@@ -191,7 +195,7 @@ class Ran:
             pre_path = ['gdb', '--args']
         executable = [f'{OAI_PATH}cmake_targets/ran_build/build/nr-softmodem']
         oai_args = ['-O', f'{self.config_file}', '--usrp-tx-thread-config', '1']
-        if self.prb >= 106 and self.numerology == 1:
+        if self.prb >= 106 and self.numerology == 1 and self.args.tqsample:
             oai_args.append('-E')
         if self.args.rfsim > 0:
             oai_args += ['--rfsim']
@@ -205,7 +209,10 @@ class Ran:
         # Set cell name and id
         oai_args += ['--Active_gNBs', f'IAB-{self.node_id}',
                      '--gNBs.[0].gNB_ID', f'{self.node_id}',
-                     '--gNBs.[0].gNB_name', f'IAB-{self.node_id}']
+                     '--gNBs.[0].gNB_name', f'IAB-{self.node_id}',
+                     '--gNBs.[0].tracking_area_code', f'0x{self.tac:04x}',
+                     '--gNBs.[0].plmn_list[0].mcc', f'{self.mcc:03}',
+                     '--gNBs.[0].plmn_list[0].mnc', f'{self.mnc:03}']
         # Set frequency, prb and BWP Location
         oai_args += ['--gNBs.[0].servingCellConfigCommon.[0].absoluteFrequencySSB', f'{self.arfcn}',
                      '--gNBs.[0].servingCellConfigCommon.[0].dl_absoluteFrequencyPointA', f'{self.pointa}',
@@ -231,7 +238,7 @@ class Ran:
 
     def run_ue(self):
         main_exe = [f'{OAI_PATH}cmake_targets/ran_build/build/nr-uesoftmodem']
-        pre_path = ""
+        pre_path = []
         if self.args.numa > 0:
             pre_path = ['numactl', f'--cpunodebind=netdev:{USRP_DEV}', f'--membind=netdev:{USRP_DEV}']
         if self.args.gdb > 0:
@@ -239,8 +246,8 @@ class Ran:
             pre_path = ['gdb', '--args']
         args = ['--thread-pool', '-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1',
                 #f'--{self.mode}',
-                '--uicc0.imsi', f'2089500000000{self.node_id[1:]}',
-                '--uicc0.dnn', "internet",
+                '--uicc0.imsi', f'{self.mcc:03}{self.mnc:02}00000000{self.node_id[1:]}',
+                '--uicc0.dnn', self.dnn,
                 '--usrp-args', f'addr={USRP_ADDR}',
                 '--numerology', f'{self.numerology}',
                 '-r', f'{self.prb}',
@@ -251,7 +258,6 @@ class Ran:
                 #'--nokrnmod', '1',
                 '--ue-txgain', '0',
                 '--ue-rxgain', '120',
-                '-A', f'{self.conf["timing_advance"]}',
                 '--clock-source', '0',
                 '--time-source', '0',
                 '--ue-fo-compensation',
@@ -260,10 +266,10 @@ class Ran:
         if self.args.type == 'phy-test':
             args += ['--phy-test']
         if self.args.rfsim > 0:
-            executable = ['RFSIMULATOR=127.0.0.1', f'{main_exe}']
-            args += ['--rfsim']
+            args += ['--rfsim', '--rfsimulator.serveraddr 127.0.0.1']
         else:
-            executable = main_exe
+            args += ['-A', f'{self.conf["timing_advance"]}']
+        executable = main_exe
         if self.prb >= 106 and self.numerology == 1 and self.args.tqsample:
             # USRP X3*0 needs to lower the sample rate to 3/4
             args += ['-E']
@@ -316,6 +322,10 @@ if __name__ == '__main__':
     parser.add_argument('--if_freq', default=0, type=int)
     parser.add_argument('--scope', default=False, action='store_true', help='Activate softscope (scope needs to be compiled and SSH needs -X or -Y)')
     parser.add_argument('--tqsample', default=True, action='store_true', help='use 3/4 of sampling rate in USRP')
+    parser.add_argument('--mcc', default=208, type=int, help='MCC: 3 digits')
+    parser.add_argument('--mnc', default=95, type=int, help='MNC: 2 digits')
+    parser.add_argument('--tac', default=0xa000, type=int, help='TAC') 
+    parser.add_argument('--dnn', default='internet', type=str, help='DNN')
 
     args = parser.parse_args()
     r = Ran(args)
