@@ -146,7 +146,6 @@ def scan_docker_logs_and_do_stuff(service_name):
     signal.signal(signal.SIGINT, handle_sigint)
     new_context = "SMF CONTEXT:"
     get_imsi = "SUPI:"
-    dn_ip_address = '192.168.70.135'
     status_file = '/tmp/NR_STATE'
     server_jobs = []
 
@@ -273,11 +272,11 @@ def run_UE_test(args):
         if conn_established:
             interface_prefix = 'oaitun'
             ip_address = get_interface_ip(interface_prefix)
-            dn_ip_address = '192.168.70.129'
             if ip_address:
                 logging.info(f"The IP address of interface {interface_prefix} is: {ip_address}")
                 # default route
-                add_route_cmd = "route add default gw 12.1.1.1"
+                default_gw_ip = '.'.join(ip_address.split('.')[:-1]) + '.1'
+                add_route_cmd = "route add default gw {}".format(default_gw_ip)
                 try:
                     subprocess.run(add_route_cmd, shell=True, check=True)
                     logging.info("Default route added successfully.")
@@ -290,8 +289,6 @@ def run_UE_test(args):
                 logging.info("Starting DL iperf job")
                 output_filename = f'{current_directory}/iperf-ue-DL.log'
                 output_file = open(output_filename, "w")
-                # iperfDLcmd = f'iperf3 -u --bind {ip_address} -b {args.dl_iperf_rate}M -c {dn_ip_address} -t {args.iperf_time} -p 52{ue.node_id[1:]} -R'.split()
-                # iperfDLcmd = f'python3 /root/sierra-wireless-automated-testing/src/iperf/iperf_run.py --type tcp --dir DL --duration {args.iperf_time} --save local --port 52{ue.node_id[1:]} --bind {ip_address}'.split()
 
                 if args.iperf_protocol == 'tcp':
                     iperfDLcmd = f'python3 /root/sierra-wireless-automated-testing/src/iperf/iperf_run.py --type {args.iperf_protocol} --dir DL --duration {args.iperf_time} --save local --port 52{ue.node_id[1:]} --bind {ip_address}'.split()
@@ -309,8 +306,6 @@ def run_UE_test(args):
                 logging.info("Starting UL client job")
                 output_filename = f'{current_directory}/iperf-ue-UL.log'
                 output_file = open(output_filename, "w")
-                # iperfULcmd = f'iperf3 -u --bind {ip_address} -b {args.ul_iperf_rate}M -c {dn_ip_address} -t {args.iperf_time} -p 52{ue.node_id[1:]}'.split()
-                # iperfULcmd = f'python3 /root/sierra-wireless-automated-testing/src/iperf/iperf_run.py --type tcp --dir UL --duration {args.iperf_time} --save local --port 52{ue.node_id[1:]} --bind {ip_address}'.split()
 
                 if args.iperf_protocol == 'tcp':
                     iperfULcmd = f'python3 /root/sierra-wireless-automated-testing/src/iperf/iperf_run.py --type {args.iperf_protocol} --dir UL --duration {args.iperf_time} --save local --port 52{ue.node_id[1:]} --bind {ip_address}'.split()
