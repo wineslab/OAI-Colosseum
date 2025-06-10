@@ -203,6 +203,12 @@ class Ran:
                 logging.info('About to set route to CN via device {}'.format(local_dev))
                 set_route(local_dev)
                 logging.info('Route to CN set')
+            elif MAIN_DEV == 'can0':
+                core_network_gw = '.'.join(local_ip.split('.')[:-1]) + '.1'
+                core_network_route_cmd = f'route add {AMF_IP}/32 gw {core_network_gw} dev {MAIN_DEV}'
+                logging.info('About to set route to CN with: {}'.format(core_network_route_cmd))
+                os.system(core_network_route_cmd)
+                logging.info('Route to CN set')
             else:
                 logging.info('Route to CN should be set manually')
         else:
