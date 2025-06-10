@@ -284,7 +284,12 @@ class Ran:
             pre_path += ['gdb', '--args']
         args = ['--thread-pool', '-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1',
                 '--log_config.global_log_options', 'nocolor,level,time',
-                '--uicc0.imsi', f'20899000074{self.node_id[1:]}',
+                '--uicc0.imsi', f'001040192560{self.node_id[2:]}',
+                '--uicc0.key', 'fec86ba6eb707ed08905757b1bb44b8f',
+                '--uicc0.opc', 'C42449863BBAD02B66D16BC975D77CC1',
+                '--uicc0.nssai_sst', '1',
+                '--uicc0.nssai_sd', \'0xffffff\'',
+                '--uicc0.dnn', 'oai',
                 '--usrp-args', f'addr={USRP_ADDR}',
                 '--numerology', f'{self.numerology}',
                 '-r', f'{self.prb}',
@@ -297,8 +302,7 @@ class Ran:
                 '--clock-source', '1',
                 '--time-source', '1',
                 '--ue-fo-compensation',
-                '--if_freq', f'{self.if_freq}',
-                '--uicc0.nssai_sd', '0']
+                '--if_freq', f'{self.if_freq}']
         if self.mode != 'sa':
             args += [f'--{self.mode}']
         if self.args.type == 'phy-test':
