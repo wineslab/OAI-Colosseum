@@ -21,6 +21,7 @@ USRP_ADDR = os.getenv('USRP_ADDR')
 MAIN_DEV = os.getenv('MAIN_DEV')
 IAB_DEV = os.getenv('IAB_DEV')
 AMF_IP = os.getenv('AMF_IP')
+N3_PORT = os.getenv('N3_PORT')
 VIVADO_PATH = '/opt/vivado_colosseum'
 
 
@@ -197,9 +198,13 @@ class Ran:
         if type != 'relay':
             local_ip = self.main_ip
             local_dev = MAIN_DEV
-            logging.info('About to set route to CN via device {}'.format(local_dev))
-            set_route(local_dev)
-            logging.info('Route to CN set')
+
+            if MAIN_DEV == 'col0':
+                logging.info('About to set route to CN via device {}'.format(local_dev))
+                set_route(local_dev)
+                logging.info('Route to CN set')
+            else:
+                logging.info('Route to CN should be set manually')
         else:
             local_ip = self.iab_ip
             local_dev = IAB_DEV
@@ -247,7 +252,8 @@ class Ran:
                      '--gNBs.[0].NETWORK_INTERFACES.GNB_INTERFACE_NAME_FOR_NG_AMF', f'{local_dev}',
                      '--gNBs.[0].NETWORK_INTERFACES.GNB_INTERFACE_NAME_FOR_NGU', f'{local_dev}',
                      '--gNBs.[0].NETWORK_INTERFACES.GNB_IPV4_ADDRESS_FOR_NG_AMF', f'{local_ip}',
-                     '--gNBs.[0].NETWORK_INTERFACES.GNB_IPV4_ADDRESS_FOR_FOR_NGU', f'{local_ip}']
+                     '--gNBs.[0].NETWORK_INTERFACES.GNB_IPV4_ADDRESS_FOR_FOR_NGU', f'{local_ip}',
+                     '--gNBs.[0].NETWORK_INTERFACES.GNB_PORT_FOR_NGU', f'{N3_PORT}']
 
         # Set Near-RT RIC parameters
         if self.near_rt_ric_ip and self.flexric_sm_dir:
