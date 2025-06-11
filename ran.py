@@ -19,8 +19,10 @@ OAI_PATH = os.getenv('OAI_PATH')
 BASE_CONF = os.getenv('BASE_CONF')
 USRP_ADDR = os.getenv('USRP_ADDR')
 MAIN_DEV = os.getenv('MAIN_DEV')
+MAIN_DEV_UE = os.getenv('MAIN_DEV_UE')
 IAB_DEV = os.getenv('IAB_DEV')
 AMF_IP = os.getenv('AMF_IP')
+N3_PORT = os.getenv('N3_PORT')
 VIVADO_PATH = '/opt/vivado_colosseum'
 
 
@@ -77,10 +79,15 @@ class Ran:
         if args.timing_advance is not None:
             self.conf["timing_advance"] = args.timing_advance
 
-        logging.info('Setting Near-RT RIC IP and service model directory')
-        self.near_rt_ric_ip = args.near_rt_ric_ip
-        self.flexric_sm_dir = args.flexric_sm_dir
-        logging.info('Near-RT RIC IP set')
+        if self.type != 'ue':
+            logging.info('Setting Near-RT RIC IP and service model directory')
+            self.near_rt_ric_ip = args.near_rt_ric_ip
+            self.flexric_sm_dir = args.flexric_sm_dir
+            logging.info('Near-RT RIC IP set')
+        else:
+            logging.debug(f'Not setting Near-RT RIC IP and service model directory '
+                          f'for node of type {self.type}')
+
         self.set_ips()
         logging.info('IP addresses set')
 
@@ -169,7 +176,12 @@ class Ran:
 
     def set_ips(self):
         logging.info('Calling set_ips')
-        self.main_ip = os.popen(f"ip -f inet addr show {MAIN_DEV} | grep -Po 'inet \K[\d.]+'").read().strip()
+        if self.type == 'ue':
+            main_dev_iface = MAIN_DEV_UE
+        else:
+            main_dev_iface = MAIN_DEV
+
+        self.main_ip = os.popen(f"ip -f inet addr show {main_dev_iface} | grep -Po 'inet \K[\d.]+'").read().strip()
         self.iab_ip = os.popen(f"ip -f inet addr show {IAB_DEV} | grep -Po 'inet \K[\d.]+'").read().strip()
         self.node_id = self.main_ip.split('.')[3]
 
@@ -197,9 +209,19 @@ class Ran:
         if type != 'relay':
             local_ip = self.main_ip
             local_dev = MAIN_DEV
-            logging.info('About to set route to CN via device {}'.format(local_dev))
-            set_route(local_dev)
-            logging.info('Route to CN set')
+
+            if MAIN_DEV == 'col0':
+                logging.info('About to set route to CN via device {}'.format(local_dev))
+                set_route(local_dev)
+                logging.info('Route to CN set')
+            elif MAIN_DEV == 'can0':
+                core_network_gw = '.'.join(local_ip.split('.')[:-1]) + '.1'
+                core_network_route_cmd = f'route add {AMF_IP}/32 gw {core_network_gw} dev {MAIN_DEV}'
+                logging.info('About to set route to CN with: {}'.format(core_network_route_cmd))
+                os.system(core_network_route_cmd)
+                logging.info('Route to CN set')
+            else:
+                logging.info('Route to CN should be set manually')
         else:
             local_ip = self.iab_ip
             local_dev = IAB_DEV
@@ -247,7 +269,8 @@ class Ran:
                      '--gNBs.[0].NETWORK_INTERFACES.GNB_INTERFACE_NAME_FOR_NG_AMF', f'{local_dev}',
                      '--gNBs.[0].NETWORK_INTERFACES.GNB_INTERFACE_NAME_FOR_NGU', f'{local_dev}',
                      '--gNBs.[0].NETWORK_INTERFACES.GNB_IPV4_ADDRESS_FOR_NG_AMF', f'{local_ip}',
-                     '--gNBs.[0].NETWORK_INTERFACES.GNB_IPV4_ADDRESS_FOR_FOR_NGU', f'{local_ip}']
+                     '--gNBs.[0].NETWORK_INTERFACES.GNB_IPV4_ADDRESS_FOR_FOR_NGU', f'{local_ip}',
+                     '--gNBs.[0].NETWORK_INTERFACES.GNB_PORT_FOR_NGU', f'{N3_PORT}']
 
         # Set Near-RT RIC parameters
         if self.near_rt_ric_ip and self.flexric_sm_dir:
@@ -278,7 +301,12 @@ class Ran:
             pre_path += ['gdb', '--args']
         args = ['--thread-pool', '-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1',
                 '--log_config.global_log_options', 'nocolor,level,time',
-                '--uicc0.imsi', f'20899000074{self.node_id[1:]}',
+                '--uicc0.imsi', f'001040192560{self.node_id[2:]}',
+                '--uicc0.key', 'fec86ba6eb707ed08905757b1bb44b8f',
+                '--uicc0.opc', 'C42449863BBAD02B66D16BC975D77CC1',
+                '--uicc0.nssai_sst', '1',
+                '--uicc0.nssai_sd', '0xffffff',
+                '--uicc0.dnn', 'oai',
                 '--usrp-args', f'addr={USRP_ADDR}',
                 '--numerology', f'{self.numerology}',
                 '-r', f'{self.prb}',
@@ -291,8 +319,7 @@ class Ran:
                 '--clock-source', '1',
                 '--time-source', '1',
                 '--ue-fo-compensation',
-                '--if_freq', f'{self.if_freq}',
-                '--uicc0.nssai_sd', '0']
+                '--if_freq', f'{self.if_freq}']
         if self.mode != 'sa':
             args += [f'--{self.mode}']
         if self.args.type == 'phy-test':
