@@ -300,6 +300,7 @@ def run_UE_test(args):
                     iperfDLcmd = f'python3 /root/sierra-wireless-automated-testing/src/iperf/iperf_run.py --type {args.iperf_protocol} --udp_rate_mbps {iperf_target_rate_dl} --dir DL --duration {args.iperf_time} --save local --port 52{ue.node_id[1:]} --bind {ip_address}'.split()
 
                 try:
+                    logging.info(iperfDLcmd)
                     iperfDL = subprocess.Popen(iperfDLcmd, stdout=output_file, stderr=subprocess.STDOUT)
                 except Exception as e:
                     logging.error("Error starting DL iperf job")
@@ -319,6 +320,7 @@ def run_UE_test(args):
                     iperfULcmd = f'python3 /root/sierra-wireless-automated-testing/src/iperf/iperf_run.py --type {args.iperf_protocol} --udp_rate_mbps {iperf_target_rate_ul} --dir UL --duration {args.iperf_time} --save local --port 52{ue.node_id[1:]} --bind {ip_address}'.split()
 
                 try:
+                    logging.info(iperfULcmd)
                     iperfUL = subprocess.Popen(iperfULcmd, stdout=output_file, stderr=subprocess.STDOUT)
                 except Exception as e:
                     logging.error("Error starting UL iperf job")

@@ -1,0 +1,6 @@
+mode_type=ue
+iperf_duration=60
+iperf_protocol=tcp
+dl_iperf_rate=0
+ul_iperf_rate=0
+timing_advance=2539
