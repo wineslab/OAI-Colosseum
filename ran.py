@@ -19,6 +19,7 @@ OAI_PATH = os.getenv('OAI_PATH')
 BASE_CONF = os.getenv('BASE_CONF')
 USRP_ADDR = os.getenv('USRP_ADDR')
 MAIN_DEV = os.getenv('MAIN_DEV')
+MAIN_DEV_UE = os.getenv('MAIN_DEV_UE')
 IAB_DEV = os.getenv('IAB_DEV')
 AMF_IP = os.getenv('AMF_IP')
 N3_PORT = os.getenv('N3_PORT')
@@ -78,10 +79,15 @@ class Ran:
         if args.timing_advance is not None:
             self.conf["timing_advance"] = args.timing_advance
 
-        logging.info('Setting Near-RT RIC IP and service model directory')
-        self.near_rt_ric_ip = args.near_rt_ric_ip
-        self.flexric_sm_dir = args.flexric_sm_dir
-        logging.info('Near-RT RIC IP set')
+        if self.type != 'ue':
+            logging.info('Setting Near-RT RIC IP and service model directory')
+            self.near_rt_ric_ip = args.near_rt_ric_ip
+            self.flexric_sm_dir = args.flexric_sm_dir
+            logging.info('Near-RT RIC IP set')
+        else:
+            logging.debug(f'Not setting Near-RT RIC IP and service model directory '
+                          f'for node of type {self.type}')
+
         self.set_ips()
         logging.info('IP addresses set')
 
@@ -170,7 +176,12 @@ class Ran:
 
     def set_ips(self):
         logging.info('Calling set_ips')
-        self.main_ip = os.popen(f"ip -f inet addr show {MAIN_DEV} | grep -Po 'inet \K[\d.]+'").read().strip()
+        if self.type == 'ue':
+            main_dev_iface = MAIN_DEV_UE
+        else:
+            main_dev_iface = MAIN_DEV
+
+        self.main_ip = os.popen(f"ip -f inet addr show {main_dev_iface} | grep -Po 'inet \K[\d.]+'").read().strip()
         self.iab_ip = os.popen(f"ip -f inet addr show {IAB_DEV} | grep -Po 'inet \K[\d.]+'").read().strip()
         self.node_id = self.main_ip.split('.')[3]
 
