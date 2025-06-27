@@ -53,7 +53,7 @@ if [ "$mode_type" == "gnb" ]; then
           ncat -zv ${near_rt_ric_ip} --sctp 32224 &>> /logs/ric_reachability.log
 
           echo "Starting tcpdump process in background" >> /logs/ric_reachability.log
-          nohup tcpdump host ${near_rt_ric_ip} and port 32224 -w /logs/e2_gnb.pcap
+          nohup tcpdump -i any -w /logs/e2_gnb.pcap -s 0 host ${near_rt_ric_ip} and port 32224 &
           echo "" >> /logs/ric_reachability.log
         fi
 
