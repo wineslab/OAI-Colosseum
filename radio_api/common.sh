@@ -50,11 +50,11 @@ if [ "$mode_type" == "gnb" ]; then
           echo "Running RIC reachability tests"
           ping -c 3 ${near_rt_ric_ip} &> /logs/ric_reachability.log
           echo "" >> /logs/ric_reachability.log
+          echo "" >> /logs/ric_reachability.log
           ncat -zv ${near_rt_ric_ip} --sctp 32224 &>> /logs/ric_reachability.log
 
           echo "Starting tcpdump process in background" >> /logs/ric_reachability.log
           nohup tcpdump -i any -w /logs/e2_gnb.pcap -s 0 host ${near_rt_ric_ip} and port 32224 &
-          echo "" >> /logs/ric_reachability.log
         fi
 
         if [ -z ${gnb_id+x} ]; then
