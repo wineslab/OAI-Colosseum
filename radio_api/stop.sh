@@ -27,6 +27,9 @@ elif [ "$mode_type" == "gnb" ]; then
   systemctl stop oai_ran.service
   cp /root/last_log /logs/nr-gnb.log
   cp /tmp/oai_config.conf /logs/
+
+  # terminate tcpdump, which (if running) should be already saving in /logs/
+  pkill -TERM tcpdump > /dev/null 2>&1 || true; sleep 2
 elif [ "$mode_type" == "core" ]; then
   systemctl stop oai_5gc.service
   cp /root/iperf-core-server-ue-* /logs/
