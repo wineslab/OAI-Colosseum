@@ -305,7 +305,7 @@ class Ran:
                 '--uicc0.key', 'fec86ba6eb707ed08905757b1bb44b8f',
                 '--uicc0.opc', 'C42449863BBAD02B66D16BC975D77CC1',
                 '--uicc0.nssai_sst', '1',
-                '--uicc0.nssai_sd', '0xffffff',
+                '--uicc0.nssai_sd', '0x000001',
                 '--uicc0.dnn', 'oai',
                 '--usrp-args', f'addr={USRP_ADDR}',
                 '--numerology', f'{self.numerology}',
