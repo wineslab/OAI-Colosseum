@@ -260,7 +260,7 @@ def run_UE_test(args):
     conn_established = False
 
     # pause in case we need to restart the gNB
-    ue_wait_time = 30
+    ue_wait_time = 120
     logging.info(f"Pausing for {ue_wait_time} seconds")
     time.sleep(ue_wait_time)
 
