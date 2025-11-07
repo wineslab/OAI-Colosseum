@@ -131,7 +131,7 @@ class Ran:
                          '--gNBs.[0].min_rxtxtime', f'{minrxtxtime}']
             args += ['--L1s.[0].num_cc', '1',
                      '--L1s.[0].tr_n_preference', f'local_mac',
-                     '--L1s.[0].pusch_proc_threads', '32',
+                     # '--L1s.[0].pusch_proc_threads', '32',
                      '--L1s.[0].prach_dtx_threshold', '120',
                      '--L1s.[0].pucch0_dtx_threshold', '150',
                      '--L1s.[0].ofdm_offset_divisor', '8']
@@ -144,13 +144,13 @@ class Ran:
                      '--RUs.[0].max_pdschReferenceSignalPower', '-27',
                      '--RUs.[0].max_rxgain', '114',
                      '--RUs.[0].eNB_instances', '[0]',
-                     '--RUs.[0].bf_weights', '[0x00007fff, 0x0000, 0x0000, 0x0000]',
+                     # '--RUs.[0].bf_weights', '[0x00007fff, 0x0000, 0x0000, 0x0000]',
                      '--RUs.[0].clock_src', 'external',
                      '--RUs.[0].time_src', 'external',
                      '--RUs.[0].sdr_addrs', f'addr={USRP_ADDR}',
                      '--RUs.[0].if_freq', f'{self.if_freq}']
-            args += ['--THREAD_STRUCT.[0].parallel_config', 'PARALLEL_SINGLE_THREAD',
-                     '--THREAD_STRUCT.[0].worker_config', 'WORKER_ENABLE']
+            # args += ['--THREAD_STRUCT.[0].parallel_config', 'PARALLEL_SINGLE_THREAD',
+            args += ['--THREAD_STRUCT.[0].worker_config', 'WORKER_ENABLE']
         elif f1_type == 'cu':
             args += ['--gNBs.[0].tr_s_preference', 'f1',
                      '--gNBs.[0].local_s_if_name', 'col0',
@@ -266,10 +266,10 @@ class Ran:
         # Set AMF parameters
         # BUG: this cli command is not working, wait for answer from OAI
         oai_args += ['--gNBs.[0].amf_ip_address.[0].ipv4', f'{AMF_IP}',
-                     '--gNBs.[0].NETWORK_INTERFACES.GNB_INTERFACE_NAME_FOR_NG_AMF', f'{local_dev}',
-                     '--gNBs.[0].NETWORK_INTERFACES.GNB_INTERFACE_NAME_FOR_NGU', f'{local_dev}',
+                     # '--gNBs.[0].NETWORK_INTERFACES.GNB_INTERFACE_NAME_FOR_NG_AMF', f'{local_dev}',
+                     # '--gNBs.[0].NETWORK_INTERFACES.GNB_INTERFACE_NAME_FOR_NGU', f'{local_dev}',
                      '--gNBs.[0].NETWORK_INTERFACES.GNB_IPV4_ADDRESS_FOR_NG_AMF', f'{local_ip}',
-                     '--gNBs.[0].NETWORK_INTERFACES.GNB_IPV4_ADDRESS_FOR_FOR_NGU', f'{local_ip}',
+                     # '--gNBs.[0].NETWORK_INTERFACES.GNB_IPV4_ADDRESS_FOR_FOR_NGU', f'{local_ip}',
                      '--gNBs.[0].NETWORK_INTERFACES.GNB_PORT_FOR_NGU', f'{N3_PORT}']
 
         # Set Near-RT RIC parameters
