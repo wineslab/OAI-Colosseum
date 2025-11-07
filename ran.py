@@ -150,7 +150,7 @@ class Ran:
                      '--RUs.[0].sdr_addrs', f'addr={USRP_ADDR}',
                      '--RUs.[0].if_freq', f'{self.if_freq}']
             # args += ['--THREAD_STRUCT.[0].parallel_config', 'PARALLEL_SINGLE_THREAD',
-            args += ['--THREAD_STRUCT.[0].worker_config', 'WORKER_ENABLE']
+            #          '--THREAD_STRUCT.[0].worker_config', 'WORKER_ENABLE']
         elif f1_type == 'cu':
             args += ['--gNBs.[0].tr_s_preference', 'f1',
                      '--gNBs.[0].local_s_if_name', 'col0',
